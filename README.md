@@ -1,9 +1,8 @@
 # Munaqasa · مناقصة
 
-Sealed bidding for construction materials. A buyer posts what a site needs,
-suppliers bid against each other without seeing anyone else's price, and at the
-closing time every bid opens at once — ranked on **landed cost**, not on the
-price per bag.
+A live auction for construction materials. A buyer posts what a site needs,
+suppliers undercut each other in the open while the clock runs, and when it
+stops the lowest **landed cost** wins by itself — nobody picks a winner.
 
 **Live site:** https://yasser1164-ux.github.io/munaqasa/
 (auto-deploys from `main` via GitHub Pages; live about a minute after each merge)
@@ -16,13 +15,19 @@ English and Arabic with true RTL, toggled from the header.
 
 Buying materials by phone means taking the first quote from the supplier who
 answered, comparing unit prices that aren't comparable, and never knowing what
-the others would have said. Munaqasa turns that into a tender:
+the others would have said. Munaqasa turns that into an auction that runs
+itself:
 
 1. **Post** — materials, quantities, specification, the date it must be on site.
-2. **Sealed bids** — one link to the supplier WhatsApp group. Nobody sees
-   anybody else's price, so nobody shades a number by a riyal.
-3. **Compare and award** — at the closing time everything opens together,
-   ranked on landed cost, with a line-by-line split award underneath.
+2. **They undercut** — one link to the supplier WhatsApp group. Every supplier
+   sees the price to beat, so it keeps falling: one opens at 64,216, another
+   answers 62,204, an hour later the first comes back at 61,600.
+3. **Lowest wins** — when the clock stops, the cheapest complete landed cost
+   wins automatically. The buyer decides nothing, which is exactly why the
+   suppliers bother going lower.
+
+Every price is public while the auction runs, and the whole walk-down is kept:
+the **price drops** panel shows each price, who placed it and when.
 
 ## Architecture
 
@@ -30,19 +35,21 @@ the others would have said. Munaqasa turns that into a tender:
 index.html    BOARD — every request, filtered by status/material/search, with
               "Your activity" (what you posted, what you bid on) on top.
 post.html     Buyer's form: line items, delivery site, bidding window.
-tender.html   One request — three screens in one, decided by who you are and
-              what the clock says (sealed count · bid form · comparison).
+tender.html   One auction — the price to beat, the live standings, the
+              price-drop history, the bid form, and the automatic winner.
 i18n.js       LANGUAGE — the en/ar dictionary, tr(), Arabic plural rules, and
               the toggle that flips dir=rtl and re-renders each page.
 core.js       Materials catalog (bilingual), units, cities, formatting, and the
-              bid maths: landed cost, coverage, value score, split award.
+              auction maths: landed cost, coverage, ranking, who is winning,
+              price history, split award.
 store.js      DATA layer: Supabase REST + a localStorage mirror, plus the
-              device-key identity. Enforces sealing on the client.
-seed.js       Sample board — six requests at every stage of the cycle.
+              device-key identity. Polls for new prices while an auction runs.
+seed.js       Sample board — six auctions, live and finished, with real
+              price-drop histories.
 list.js       Board logic.   post.js  Form logic.   tender.js  Detail page.
 styles.css    All styling, mobile at 760px, plus the RTL rules.
 config.js     Supabase URL + anon key.
-supabase/tenders.sql  Tables, row level security, bid-count trigger, award RPC.
+supabase/tenders.sql  Tables, row level security, bidder-count trigger.
 ```
 
 Script order on every page: `config → i18n → core → store → seed → (list|post|tender)`.
@@ -58,9 +65,12 @@ landed = Σ(quantity × unit price) + delivery − discount + 15% VAT
 - **Partial bids** are normal (a sand yard won't quote your rebar). They're
   never ranked against complete bids — a smaller total for a smaller scope is
   meaningless — but they compete line by line in the split award.
-- **Value score** balances price against lead time, relative to the best bid on
-  each axis; the slider moves it between 50% and 100% price. The cheapest bid
-  is often not the one that keeps the crew working, and the ranking says so.
+- **The winner is computed, never chosen.** It is the lowest complete bid when
+  the clock stops — `leadingBid()` in `core.js`, recalculated on every render.
+  Nothing stores it, so nothing can override it.
+- **You can only go down.** A supplier may drop their price as often as they
+  like; each drop is a new row and only their latest one competes. Raising your
+  own standing price is refused — this is an auction, not a quote sheet.
 - **Split award** takes the cheapest supplier per line, then charges every
   chosen supplier's delivery once and checks the split still wins. Volume
   discounts quoted on a full package aren't counted toward a split order.
@@ -85,13 +95,14 @@ The anon key is public, so nothing important is left to the browser:
 
 | Rule | Enforced by |
 |------|-------------|
-| Bids are invisible until the tender's closing time | RLS policy on `bids` (select only when `closes_at <= now()`) |
-| No bids after the close | RLS policy on `bids` (insert) |
+| Prices are public while the auction runs | RLS policy on `bids` (select `true`) |
+| **No bid after the close** — the one rule that matters | RLS policy on `bids` (insert) |
 | A tender needs a title, ≥1 line and a future close | RLS policy on `tenders` (insert) |
-| The buyer knows *how many* bids, never what they say | `bid_count`, kept by a trigger |
-| Only the buyer awards, only after the close, only once | `award_tender()`, a `security definer` function that checks the key server-side |
+| How many suppliers are competing | `bid_count`, kept by a trigger |
+| The cheapest wins, and nobody can override it | there is no award write at all — the winner is computed from the rows |
 
-Nothing can update or delete a row with the public key.
+Nothing can update or delete a row with the public key. A price, once placed,
+stands as placed.
 
 ## Language (i18n.js)
 
@@ -119,8 +130,8 @@ No accounts. A random key in `localStorage` proves "I posted this" and "this is
 my bid". A supplier sees their own sealed bid because their browser kept a copy,
 not because the server will hand it back. That means:
 
-- clearing site data, or switching device, loses the ability to award a request
-  you posted — keep the link;
+- clearing site data, or switching device, loses the thread back to an auction
+  you posted or a price you placed — keep the link;
 - it is proof of *possession*, not identity: good enough for a supplier group
   you already deal with, not for a public procurement portal. Real accounts
   (Supabase Auth) are the upgrade path, and the schema is ready for it — swap
@@ -135,5 +146,9 @@ python3 -m http.server 8000
 
 Without a database you get the sample board and everything stays on the device.
 To start clean, clear `munaqasa.*` from localStorage. The sample board retires
-itself the moment a real request exists — except a sample you bid on, which
+itself the moment a real auction exists — except a sample you bid on, which
 stays so your own bid still points somewhere.
+
+The live pages poll every 20–30 seconds so prices and countdowns move without a
+reload; a supplier halfway through typing a price is never re-rendered out from
+under them.

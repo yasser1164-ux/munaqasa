@@ -1,10 +1,12 @@
 // ---- SAMPLE BOARD -----------------------------------------------------------
-// A worked example so the app is never an empty screen: six requests at every
-// stage of the cycle — open, closing tonight, opened for comparison, awarded.
+// A worked example so the app is never an empty screen: auctions running right
+// now with suppliers undercutting each other, and finished ones showing who won.
 // It is demo data, priced in plausible Eastern Province ranges, and it vanishes
 // the moment there is anything real on the board (see mzLoadBoard in store.js).
 //
-// Dates are relative to right now, so the demo is never stale.
+// Several suppliers appear twice on purpose — an opening price and a later,
+// lower one. That is the whole shape of the thing: only the latest price
+// competes, the earlier ones become the price-drop history.
 
 const mzDay = n => {
   const d = new Date();
@@ -15,40 +17,26 @@ const mzDay = n => {
 const mzDate = n => mzDay(n).slice(0, 10);
 const mzHours = n => new Date(Date.now() + n * 3600 * 1000).toISOString();
 
-// One request belongs to whoever is looking, so the buyer's side of the app —
-// the sealed bids opening, the comparison table, the award — can be seen
-// without waiting three days for a tender to close.
+// One finished auction belongs to whoever is looking, so the buyer's side —
+// watching your own auction and seeing who won — can be seen without waiting
+// three days for a clock to run out.
 const MZ_DEMO_OWNER = mzMe().key;
 const MZ_OTHER = 'demo-other-buyer';
 
 const MZ_SEED = {
   tenders: [
     {
-      id: 'seed-foundation', ref: 'RFQ-4821',
-      title: 'Villa foundation package — 3 units, Al Khobar',
-      buyerName: 'Site office', buyerCompany: 'Al Bahr Contracting', buyerPhone: '',
-      city: 'Al Khobar', site: 'Al Aqrabiyah, plot 44 — crane on site, deliver 6–11 AM',
-      neededBy: mzDate(6), closesAt: mzHours(-14), createdAt: mzDay(-5),
-      items: [
-        { material: 'cement', spec: 'OPC Type I, 50 kg bags', qty: 400, unit: 'bag' },
-        { material: 'rebar', spec: 'Grade 60, 16 mm — cut & bent to schedule', qty: 12, unit: 'tonne' },
-        { material: 'aggregate', spec: '3/4" washed', qty: 40, unit: 'm3' }
-      ],
-      notes: 'Mill certificate required for the rebar. Offloading is on us.',
-      ownerKey: MZ_DEMO_OWNER, bidCount: 4, awardedBidId: null, demo: true
-    },
-    {
       id: 'seed-slab', ref: 'RFQ-4830',
       title: 'Ready-mix pour — warehouse slab, Dammam',
       buyerName: 'Procurement', buyerCompany: 'Gulf Steel Works', buyerPhone: '',
       city: 'Dammam', site: 'Second Industrial City — pump access from the north gate',
-      neededBy: mzDate(9), closesAt: mzHours(72), createdAt: mzDay(-1),
+      neededBy: mzDate(9), closesAt: mzHours(72), createdAt: mzHours(-30),
       items: [
         { material: 'readymix', spec: 'C35, 100 mm slump, retarder for a 4-hour pour', qty: 180, unit: 'm3' },
         { material: 'steel', spec: 'Mesh A393, 6 m x 2.4 m sheets', qty: 3.5, unit: 'tonne' }
       ],
       notes: 'Continuous pour from 5 AM. Quote the pump separately in the notes.',
-      ownerKey: MZ_OTHER, bidCount: 5, awardedBidId: null, demo: true
+      ownerKey: MZ_OTHER, bidCount: 3, demo: true
     },
     {
       id: 'seed-blocks', ref: 'RFQ-4834',
@@ -62,33 +50,7 @@ const MZ_SEED = {
         { material: 'sand', spec: 'Washed plaster sand', qty: 60, unit: 'm3' }
       ],
       notes: 'Staged delivery — 15,000 blocks per week, no yard space for more.',
-      ownerKey: MZ_OTHER, bidCount: 3, awardedBidId: null, demo: true
-    },
-    {
-      id: 'seed-tiles', ref: 'RFQ-4802',
-      title: 'Tiles for 12 apartments — Dammam',
-      buyerName: 'Fit-out team', buyerCompany: 'Sahel Development', buyerPhone: '',
-      city: 'Dammam', site: 'Al Faisaliyah — lift available, 4th floor store',
-      neededBy: mzDate(4), closesAt: mzHours(-40), createdAt: mzDay(-8),
-      items: [
-        { material: 'tiles', spec: '60x60 porcelain, matt, light grey', qty: 1450, unit: 'm2' },
-        { material: 'tiles', spec: 'Bathroom wall 30x60, white gloss', qty: 620, unit: 'm2' }
-      ],
-      notes: '5% attic stock on top of the quantities above, same batch.',
-      ownerKey: MZ_OTHER, bidCount: 3, awardedBidId: null, demo: true
-    },
-    {
-      id: 'seed-fitout', ref: 'RFQ-4788',
-      title: 'Gypsum & insulation — office fit-out, Dhahran',
-      buyerName: 'Projects', buyerCompany: 'Meridian Interiors', buyerPhone: '',
-      city: 'Dhahran', site: 'Doha district — after-hours delivery only',
-      neededBy: mzDate(2), closesAt: mzHours(-96), createdAt: mzDay(-12),
-      items: [
-        { material: 'gypsum', spec: '12.5 mm moisture-resistant, 1.2 x 2.4 m', qty: 900, unit: 'sheet' },
-        { material: 'insulation', spec: '50 mm rockwool, 60 kg/m³', qty: 1600, unit: 'm2' }
-      ],
-      notes: 'Fire certificate needed with the delivery note.',
-      ownerKey: MZ_OTHER, bidCount: 2, awardedBidId: 'seed-fitout-b1', demo: true
+      ownerKey: MZ_OTHER, bidCount: 3, demo: true
     },
     {
       id: 'seed-cable', ref: 'RFQ-4836',
@@ -101,16 +63,145 @@ const MZ_SEED = {
         { material: 'plumbing', spec: '25 mm UPVC conduit, 3 m lengths', qty: 600, unit: 'piece' }
       ],
       notes: 'SASO-marked cable only.',
-      ownerKey: MZ_OTHER, bidCount: 1, awardedBidId: null, demo: true
+      ownerKey: MZ_OTHER, bidCount: 1, demo: true
+    },
+    {
+      id: 'seed-foundation', ref: 'RFQ-4821',
+      title: 'Villa foundation package — 3 units, Al Khobar',
+      buyerName: 'Site office', buyerCompany: 'Al Bahr Contracting', buyerPhone: '',
+      city: 'Al Khobar', site: 'Al Aqrabiyah, plot 44 — crane on site, deliver 6–11 AM',
+      neededBy: mzDate(6), closesAt: mzHours(-14), createdAt: mzDay(-5),
+      items: [
+        { material: 'cement', spec: 'OPC Type I, 50 kg bags', qty: 400, unit: 'bag' },
+        { material: 'rebar', spec: 'Grade 60, 16 mm — cut & bent to schedule', qty: 12, unit: 'tonne' },
+        { material: 'aggregate', spec: '3/4" washed', qty: 40, unit: 'm3' }
+      ],
+      notes: 'Mill certificate required for the rebar. Offloading is on us.',
+      ownerKey: MZ_DEMO_OWNER, bidCount: 4, demo: true
+    },
+    {
+      id: 'seed-tiles', ref: 'RFQ-4802',
+      title: 'Tiles for 12 apartments — Dammam',
+      buyerName: 'Fit-out team', buyerCompany: 'Sahel Development', buyerPhone: '',
+      city: 'Dammam', site: 'Al Faisaliyah — lift available, 4th floor store',
+      neededBy: mzDate(4), closesAt: mzHours(-40), createdAt: mzDay(-8),
+      items: [
+        { material: 'tiles', spec: '60x60 porcelain, matt, light grey', qty: 1450, unit: 'm2' },
+        { material: 'tiles', spec: 'Bathroom wall 30x60, white gloss', qty: 620, unit: 'm2' }
+      ],
+      notes: '5% attic stock on top of the quantities above, same batch.',
+      ownerKey: MZ_OTHER, bidCount: 3, demo: true
+    },
+    {
+      id: 'seed-fitout', ref: 'RFQ-4788',
+      title: 'Gypsum & insulation — office fit-out, Dhahran',
+      buyerName: 'Projects', buyerCompany: 'Meridian Interiors', buyerPhone: '',
+      city: 'Dhahran', site: 'Doha district — after-hours delivery only',
+      neededBy: mzDate(2), closesAt: mzHours(-96), createdAt: mzDay(-12),
+      items: [
+        { material: 'gypsum', spec: '12.5 mm moisture-resistant, 1.2 x 2.4 m', qty: 900, unit: 'sheet' },
+        { material: 'insulation', spec: '50 mm rockwool, 60 kg/m³', qty: 1600, unit: 'm2' }
+      ],
+      notes: 'Fire certificate needed with the delivery note.',
+      ownerKey: MZ_OTHER, bidCount: 2, demo: true
     }
   ],
 
   bids: [
-    // --- RFQ-4821, opened for comparison: the interesting case. The cheapest
-    // single supplier is not the fastest, no one is cheapest on everything, and
-    // one bid is deliberately partial (a sand yard that does not sell steel) —
-    // so the ranking, the price/speed slider and the split award all have
-    // something real to show.
+    // --- RFQ-4830, LIVE: three ready-mix suppliers walking each other down.
+    //     Two of them have already dropped once; the lead has changed hands.
+    {
+      id: 'seed-slab-a1', tenderId: 'seed-slab',
+      supplierName: 'Ahmed', supplierCompany: 'Gulf Ready Mix', supplierPhone: '',
+      lines: [238, 3200], deliveryFee: 1800, discount: 0,
+      leadDays: 4, validityDays: 14, terms: 'net30',
+      notes: 'Pump quoted separately — 2,400 SAR for the day.',
+      bidderKey: 'demo-r1', createdAt: mzHours(-26), demo: true
+    },
+    {
+      id: 'seed-slab-b1', tenderId: 'seed-slab',
+      supplierName: 'Saad', supplierCompany: 'Dammam Concrete Co', supplierPhone: '',
+      lines: [232, 3180], deliveryFee: 1200, discount: 0,
+      leadDays: 3, validityDays: 10, terms: 'delivery',
+      notes: 'Two pumps available, 5 AM start is fine.',
+      bidderKey: 'demo-r2', createdAt: mzHours(-22), demo: true
+    },
+    {
+      id: 'seed-slab-c1', tenderId: 'seed-slab',
+      supplierName: 'Waleed', supplierCompany: 'Eastern Mix', supplierPhone: '',
+      lines: [230, 3250], deliveryFee: 900, discount: 0,
+      leadDays: 5, validityDays: 30, terms: 'net30', notes: '',
+      bidderKey: 'demo-r3', createdAt: mzHours(-18), demo: true
+    },
+    {
+      id: 'seed-slab-a2', tenderId: 'seed-slab',
+      supplierName: 'Ahmed', supplierCompany: 'Gulf Ready Mix', supplierPhone: '',
+      lines: [228, 3150], deliveryFee: 1500, discount: 0,
+      leadDays: 4, validityDays: 14, terms: 'net30',
+      notes: 'Pump quoted separately — 2,400 SAR for the day.',
+      bidderKey: 'demo-r1', createdAt: mzHours(-9), demo: true
+    },
+    {
+      id: 'seed-slab-b2', tenderId: 'seed-slab',
+      supplierName: 'Saad', supplierCompany: 'Dammam Concrete Co', supplierPhone: '',
+      lines: [225, 3100], deliveryFee: 1200, discount: 0,
+      leadDays: 3, validityDays: 10, terms: 'delivery',
+      notes: 'Two pumps available, 5 AM start is fine.',
+      bidderKey: 'demo-r2', createdAt: mzHours(-3), demo: true
+    },
+
+    // --- RFQ-4834, LIVE and ending within the hour.
+    {
+      id: 'seed-blocks-a1', tenderId: 'seed-blocks',
+      supplierName: 'Hussain', supplierCompany: 'Qatif Block Factory', supplierPhone: '',
+      lines: [2.85, 14.2, 45], deliveryFee: 2500, discount: 0,
+      leadDays: 5, validityDays: 14, terms: 'delivery',
+      notes: 'Staged weekly delivery as requested.',
+      bidderKey: 'demo-q1', createdAt: mzHours(-30), demo: true
+    },
+    {
+      id: 'seed-blocks-b1', tenderId: 'seed-blocks',
+      supplierName: 'Fahad', supplierCompany: 'Gulf Blocks', supplierPhone: '',
+      lines: [2.78, 14.6, 48], deliveryFee: 3000, discount: 0,
+      leadDays: 7, validityDays: 21, terms: 'net30', notes: '',
+      bidderKey: 'demo-q2', createdAt: mzHours(-20), demo: true
+    },
+    {
+      id: 'seed-blocks-c1', tenderId: 'seed-blocks',
+      supplierName: 'Mubarak', supplierCompany: 'Qatif Sand Yard', supplierPhone: '',
+      lines: [null, null, 38], deliveryFee: 600, discount: 0,
+      leadDays: 2, validityDays: 30, terms: 'delivery',
+      notes: 'Sand only — no blocks or cement.',
+      bidderKey: 'demo-q3', createdAt: mzHours(-12), demo: true
+    },
+
+    // --- RFQ-4836, LIVE with a single bidder so far: nobody to push them down.
+    {
+      id: 'seed-cable-a1', tenderId: 'seed-cable',
+      supplierName: 'Rami', supplierCompany: 'Jubail Electric Supply', supplierPhone: '',
+      lines: [430, 8.5], deliveryFee: 700, discount: 0,
+      leadDays: 6, validityDays: 14, terms: 'net30', notes: '',
+      bidderKey: 'demo-e1', createdAt: mzHours(-4), demo: true
+    },
+
+    // --- RFQ-4821, FINISHED. The lead changed hands twice and the last drop
+    //     won it: 52,417 → 51,106 → 50,991 → 49,519 → 48,300.
+    {
+      id: 'seed-found-b1a', tenderId: 'seed-foundation',
+      supplierName: 'Khalid', supplierCompany: 'Eastern Cement Traders', supplierPhone: '',
+      lines: [13.5, 3050, 72], deliveryFee: 700, discount: 0,
+      leadDays: 4, validityDays: 14, terms: 'net30',
+      notes: 'Cement direct from the plant — the price holds for the full 400 bags.',
+      bidderKey: 'demo-s1', createdAt: mzDay(-4), demo: true
+    },
+    {
+      id: 'seed-found-b3a', tenderId: 'seed-foundation',
+      supplierName: 'Yousef', supplierCompany: 'Dammam Steel & Supply', supplierPhone: '',
+      lines: [15.8, 2850, 78], deliveryFee: 800, discount: 0,
+      leadDays: 6, validityDays: 7, terms: 'advance',
+      notes: 'Cut and bent to your bar schedule — six days includes the bending.',
+      bidderKey: 'demo-s3', createdAt: mzDay(-3), demo: true
+    },
     {
       id: 'seed-found-b1', tenderId: 'seed-foundation',
       supplierName: 'Khalid', supplierCompany: 'Eastern Cement Traders', supplierPhone: '',
@@ -125,15 +216,7 @@ const MZ_SEED = {
       lines: [14.6, 2860, 70], deliveryFee: 600, discount: 500,
       leadDays: 3, validityDays: 21, terms: 'delivery',
       notes: 'One truck, everything together. Discount applies to the full package only.',
-      bidderKey: 'demo-s2', createdAt: mzDay(-3), demo: true
-    },
-    {
-      id: 'seed-found-b3', tenderId: 'seed-foundation',
-      supplierName: 'Yousef', supplierCompany: 'Dammam Steel & Supply', supplierPhone: '',
-      lines: [15.2, 2680, 74], deliveryFee: 800, discount: 0,
-      leadDays: 6, validityDays: 7, terms: 'advance',
-      notes: 'Cut and bent to your bar schedule — six days includes the bending.',
-      bidderKey: 'demo-s3', createdAt: mzDay(-2), demo: true
+      bidderKey: 'demo-s2', createdAt: mzDay(-2), demo: true
     },
     {
       id: 'seed-found-b4', tenderId: 'seed-foundation',
@@ -143,8 +226,16 @@ const MZ_SEED = {
       notes: 'Aggregate only — we do not carry cement or steel.',
       bidderKey: 'demo-s4', createdAt: mzDay(-2), demo: true
     },
+    {
+      id: 'seed-found-b3', tenderId: 'seed-foundation',
+      supplierName: 'Yousef', supplierCompany: 'Dammam Steel & Supply', supplierPhone: '',
+      lines: [15.2, 2680, 74], deliveryFee: 800, discount: 0,
+      leadDays: 6, validityDays: 7, terms: 'advance',
+      notes: 'Cut and bent to your bar schedule — six days includes the bending.',
+      bidderKey: 'demo-s3', createdAt: mzHours(-20), demo: true
+    },
 
-    // --- RFQ-4802, opened: gives the market check enough samples to be real.
+    // --- RFQ-4802, FINISHED: gives the market check enough samples to be real.
     {
       id: 'seed-tiles-b1', tenderId: 'seed-tiles',
       supplierName: 'Hisham', supplierCompany: 'Ceramica Gulf', supplierPhone: '',
@@ -169,7 +260,7 @@ const MZ_SEED = {
       bidderKey: 'demo-s7', createdAt: mzDay(-5), demo: true
     },
 
-    // --- RFQ-4788, already awarded.
+    // --- RFQ-4788, FINISHED.
     {
       id: 'seed-fitout-b1', tenderId: 'seed-fitout',
       supplierName: 'Tareq', supplierCompany: 'Interior Supply Co', supplierPhone: '',

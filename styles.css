@@ -75,10 +75,9 @@ border-radius:var(--radius);padding:22px;text-align:center}
 
 /* ---- status badges --------------------------------------------------------- */
 .badge{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.06em;padding:3px 9px;border-radius:7px;white-space:nowrap}
-.badge.open{background:linear-gradient(135deg,#7dffa8,var(--good));color:#101a13}
+.badge.live{background:linear-gradient(135deg,#7dffa8,var(--good));color:#101a13}
 .badge.closing{background:linear-gradient(135deg,#ffd166,var(--warn));color:#1a1410}
-.badge.closed{background:linear-gradient(135deg,#8fc4ff,var(--accent-2));color:#0d1524}
-.badge.awarded{background:linear-gradient(135deg,var(--accent),#ff7a2f);color:#141821}
+.badge.ended{background:linear-gradient(135deg,#8fc4ff,var(--accent-2));color:#0d1524}
 .badge.mine{background:var(--panel-2);border:1px solid var(--accent);color:var(--accent)}
 
 /* ---- forms ----------------------------------------------------------------- */
@@ -120,11 +119,32 @@ td.num,th.num{text-align:end;white-space:nowrap;font-variant-numeric:tabular-num
 .scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -18px;padding:0 18px}
 .spec{color:var(--muted);font-size:12.5px;line-height:1.45;margin-top:2px}
 
-/* ---- sealed notice --------------------------------------------------------- */
-.sealed{background:linear-gradient(135deg,rgba(61,139,253,.12),rgba(108,92,231,.1));
-border:1px solid rgba(61,139,253,.35);border-radius:var(--radius);padding:18px;text-align:center;margin-bottom:14px}
-.sealed .big{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:4px 0}
-.sealed p{color:var(--muted);font-size:13.5px;line-height:1.55;max-width:52ch;margin:0 auto}
+/* ---- the live ticker -------------------------------------------------------
+   The price to beat, big enough to read across a site office. */
+.ticker{background:linear-gradient(135deg,rgba(61,220,132,.14),rgba(61,139,253,.10));
+border:1px solid rgba(61,220,132,.4);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:14px}
+.ticker.empty{background:var(--panel);border-style:dashed;border-color:var(--line)}
+.ticker-label{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ticker-price{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin:6px 0 2px;
+font-variant-numeric:tabular-nums}
+.ticker-who{font-size:14px;font-weight:700}
+.ticker-clock{margin-top:8px;display:inline-block;padding:4px 12px;border-radius:999px;
+background:rgba(0,0,0,.25);font-size:13px;font-weight:700;color:var(--accent)}
+.ticker p{color:var(--muted);font-size:13.5px;line-height:1.55;max-width:52ch;margin:6px auto 0}
+.pulse{color:var(--good);font-weight:700;letter-spacing:0;text-transform:none;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+.target{display:inline-block;background:rgba(255,176,32,.14);border:1px solid rgba(255,176,32,.4);
+border-radius:10px;padding:7px 12px;font-size:13.5px;font-weight:700;color:var(--accent);margin-bottom:10px}
+.mystanding h2{color:var(--good)}
+.cmp .who .you{font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.04em}
+
+/* ---- price-drop history ---------------------------------------------------- */
+.history{list-style:none;margin-top:4px}
+.history li{display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.history li:last-child{border-bottom:none}
+.h-price{font-weight:800;font-variant-numeric:tabular-nums;min-width:110px}
+.h-who{flex:1;color:var(--text)}
+.h-when{color:var(--muted);font-size:12px;white-space:nowrap}
 
 /* ---- comparison ------------------------------------------------------------ */
 .cmp td{white-space:nowrap}
