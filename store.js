@@ -206,21 +206,16 @@ function mzTender(id) {
   return MZ_BOARD.tenders.find(t => t.id === id) || null;
 }
 
-// Sealed bidding, enforced: while a tender is open nobody sees a price except
-// the supplier who wrote it. After the closing time every bid is revealed at
-// once, which is the whole point of a sealed tender.
+// Every bid on an auction, revisions included — public the moment it is
+// placed, exactly as the database now allows. The seal is gone: seeing the
+// competition is the point of a live auction.
 function mzBidsFor(tenderId) {
-  const t = mzTender(tenderId);
-  const all = MZ_BOARD.bids.filter(b => b.tenderId === tenderId);
-  if (!t || !isSealed(t)) return all;
-  const me = mzMe();
-  return all.filter(b => b.bidderKey === me.key);
+  return MZ_BOARD.bids.filter(b => b.tenderId === tenderId);
 }
 
-// What the buyer is allowed to know before opening: how many came in.
-// bid_count is kept by a database trigger so the number is public while the
-// prices are not; the local max() covers bids this device sent offline.
-function mzSealedCount(t) {
+// How many suppliers are in (not how many prices — a supplier who dropped
+// their price three times is still one bidder).
+function mzBidderCount(t) {
   const local = new Set(MZ_BOARD.bids.filter(b => b.tenderId === t.id).map(b => b.bidderKey)).size;
   return Math.max(t.bidCount || 0, local);
 }
@@ -277,27 +272,8 @@ async function mzCreateBid(draft) {
   return b;
 }
 
-async function mzAward(tenderId, bidId) {
-  const t = mzTender(tenderId);
-  if (!t) return false;
-  t.awardedBidId = bidId;
-  t.awardedAt = new Date().toISOString();
-  mzRemember('tenders', t);
-  if (!MZ_ONLINE) return false;
-  // The award is the one write the public key must not be trusted with, so it
-  // goes through award_tender() in tenders.sql: the function checks the buyer's
-  // device key server-side and refuses to award a tender that is still open,
-  // already awarded, or somebody else's.
-  try {
-    const res = await fetch(`${MZ_SUPABASE_URL}/rest/v1/rpc/award_tender`, {
-      method: 'POST',
-      headers: mzHeaders(),
-      body: JSON.stringify({ p_tender: tenderId, p_owner_key: t.ownerKey, p_bid: bidId })
-    });
-    if (!res.ok) throw new Error(`Supabase responded ${res.status}`);
-    return await res.json() === true;
-  } catch (err) {
-    console.warn('Award saved on this device only.', err);
-    return false;
-  }
+// Pull fresh prices mid-auction. A live auction that only updates on reload is
+// not live, so the auction page calls this on a timer.
+async function mzRefresh() {
+  return mzLoadBoard();
 }

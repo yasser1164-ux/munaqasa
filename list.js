@@ -10,11 +10,25 @@ let LIST_Q = '';
 
 const STATUS_FILTERS = [
   { key: 'all', label: 'f.all' },
-  { key: 'open', label: 'f.open' },
+  { key: 'live', label: 'f.live' },
   { key: 'closing', label: 'f.closing' },
-  { key: 'closed', label: 'f.closed' },
-  { key: 'awarded', label: 'f.awarded' }
+  { key: 'ended', label: 'f.ended' }
 ];
+
+// Only a supplier's latest price counts in the standings — the earlier ones
+// are history, not competing offers.
+function activeBidsOf(tenderId) {
+  const byBidder = new Map();
+  for (const b of mzBidsFor(tenderId)) {
+    const prev = byBidder.get(b.bidderKey);
+    if (!prev || new Date(b.createdAt) > new Date(prev.createdAt)) byBidder.set(b.bidderKey, b);
+  }
+  return [...byBidder.values()];
+}
+
+function supplierName(b) {
+  return b.supplierCompany || b.supplierName || (mzIsAr() ? 'مورد' : 'Supplier');
+}
 
 function tenderCard(t) {
   const st = tenderStatus(t);
@@ -23,20 +37,16 @@ function tenderCard(t) {
     return `<span class="mtag">${m.emoji} ${esc(matL(m))}</span>`;
   }).join('');
 
-  // What the card says about bids depends on whether they are still sealed:
-  // a count while open, the winning position once opened.
-  const bids = mzBidsFor(t.id);
+  // A live auction advertises the price to beat; a finished one, its winner.
+  const bids = activeBidsOf(t.id);
+  const best = leadingBid(t, bids);
   let bidLine;
-  if (t.awardedBidId) {
-    const won = MZ_BOARD.bids.find(b => b.id === t.awardedBidId);
-    bidLine = won ? `<span class="bidcount">🏆 ${esc(won.supplierCompany || won.supplierName)}</span>` : '';
-  } else if (isSealed(t)) {
-    bidLine = `<span class="bidcount">🔒 ${sealedBidsWord(mzSealedCount(t))}</span>`;
-  } else if (bids.length) {
-    const best = scoreBids(t, bids).find(r => r.coverage.complete);
-    bidLine = `<span class="bidcount">${best
-      ? tr('card.best', { bids: bidsWord(bids.length), p: money(best.totals.total) })
-      : bidsWord(bids.length)}</span>`;
+  if (!isLive(t)) {
+    bidLine = best
+      ? `<span class="bidcount">${tr('card.winner', { s: esc(supplierName(best.bid)), p: money(best.totals.total) })}</span>`
+      : `<span class="bidcount">${tr('card.noBids')}</span>`;
+  } else if (best) {
+    bidLine = `<span class="bidcount">${tr('card.best', { bids: bidsWord(bids.length), p: money(best.totals.total) })}</span>`;
   } else {
     bidLine = `<span class="bidcount">${tr('card.noBids')}</span>`;
   }
@@ -133,5 +143,9 @@ window.onLangChange = () => { if (MZ_BOARD.loaded) render(); };
 
 mzLoadBoard().then(render);
 
-// Countdowns are the point of a closing time — keep them honest without a reload.
-setInterval(() => { if (MZ_BOARD.loaded) render(); }, 60000);
+// The board is a live board: countdowns tick and prices move without a reload.
+setInterval(async () => {
+  if (!MZ_BOARD.loaded) return;
+  if (MZ_BOARD.tenders.some(isLive)) await mzRefresh();
+  render();
+}, 30000);

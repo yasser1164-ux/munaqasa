@@ -146,24 +146,24 @@ function countdown(iso) {
   return tr('cd.m', { m: mins });
 }
 
-// ---- tender status ----------------------------------------------------------
-// One source of truth, used by the board, the tender page and the share text.
-// A tender closes on its own clock: after that, bids are opened and compared.
+// ---- auction status ---------------------------------------------------------
+// One source of truth, used by the board, the auction page and the share text.
+// An auction is live until its closing time; then it is over and the lowest
+// complete price has won. Nothing in between, and nobody to decide it.
 
 function tenderStatus(t) {
-  if (t.awardedBidId) return { kind: 'awarded', label: tr('status.awarded'), short: tr('f.awarded') };
   const ms = new Date(t.closesAt) - new Date();
-  if (isNaN(ms)) return { kind: 'open', label: tr('status.open'), short: tr('status.open') };
-  if (ms <= 0) return { kind: 'closed', label: tr('status.closed'), short: tr('status.short.closed') };
-  if (ms < 24 * 3600 * 1000) return { kind: 'closing', label: `${tr('status.closing')} · ${countdown(t.closesAt)}`, short: countdown(t.closesAt) };
-  return { kind: 'open', label: `${tr('status.open')} · ${countdown(t.closesAt)}`, short: countdown(t.closesAt) };
+  if (isNaN(ms)) return { kind: 'live', label: tr('status.live'), short: tr('status.live') };
+  if (ms <= 0) return { kind: 'ended', label: tr('status.ended'), short: tr('status.ended') };
+  if (ms < 24 * 3600 * 1000) {
+    return { kind: 'closing', label: `${tr('status.closing')} · ${countdown(t.closesAt)}`, short: countdown(t.closesAt) };
+  }
+  return { kind: 'live', label: `${tr('status.live')} · ${countdown(t.closesAt)}`, short: countdown(t.closesAt) };
 }
 
-function isSealed(t) {
-  // Bids stay sealed until the closing time — nobody, buyer included, sees a
-  // price before then. That is what stops the board from becoming a race to
-  // undercut the last quote, and it is enforced in the database too.
-  return new Date(t.closesAt) > new Date() && !t.awardedBidId;
+// Bidding is open — prices are visible to everyone and can still be undercut.
+function isLive(t) {
+  return new Date(t.closesAt) > new Date();
 }
 
 // ---- bid maths --------------------------------------------------------------
@@ -201,38 +201,34 @@ function bidTotals(tender, bid) {
   return { goods, delivery, discount, net, vat, total: net + vat };
 }
 
-// Value score: cheapest is not always best when the crew is waiting on site.
-// weight = how much price matters (0.5 balanced … 1 price only). Score is
-// relative to the best bid on each axis, so 100 means "cheapest AND fastest".
-function scoreBids(tender, bids, weight = 0.75) {
-  const complete = bids.filter(b => bidCoverage(tender, b).complete);
-  const pool = complete.length ? complete : bids;
-  if (!pool.length) return [];
-  const bestTotal = Math.min(...pool.map(b => bidTotals(tender, b).total));
-  const bestLead = Math.min(...pool.map(b => Math.max(1, Number(b.leadDays) || 1)));
-  return bids.map(b => {
-    const totals = bidTotals(tender, b);
-    const cov = bidCoverage(tender, b);
-    const lead = Math.max(1, Number(b.leadDays) || 1);
-    const priceScore = totals.total > 0 ? bestTotal / totals.total : 0;
-    const speedScore = bestLead / lead;
-    return {
-      bid: b,
-      totals,
-      coverage: cov,
-      lead,
-      // Only complete bids are scored: a bid covering one line of three has a
-      // smaller total for the obvious reason, and ranking it against the
-      // others on that total would be nonsense. Partial bids compete in the
-      // split award instead.
-      score: cov.complete ? Math.round((weight * priceScore + (1 - weight) * speedScore) * 100) : null,
-      deltaVsBest: cov.complete ? totals.total - bestTotal : null
-    };
-  }).sort((a, b) => {
+// The running order of an auction: cheapest first, because cheapest is what
+// wins. Partial bids sit below the complete ones — a bid covering one line of
+// three has a smaller total for the obvious reason, and it cannot win the
+// request outright.
+function rankBids(tender, bids) {
+  return bids.map(b => ({
+    bid: b,
+    totals: bidTotals(tender, b),
+    coverage: bidCoverage(tender, b),
+    lead: Math.max(1, Number(b.leadDays) || 1)
+  })).sort((a, b) => {
     if (a.coverage.complete !== b.coverage.complete) return a.coverage.complete ? -1 : 1;
-    if (a.score != null && b.score != null) return b.score - a.score;
-    return a.totals.total - b.totals.total;   // partial bids: cheapest first
+    return a.totals.total - b.totals.total;
   });
+}
+
+// Who is winning right now — and, once the clock stops, who simply won. The
+// winner is never chosen by hand: it is the lowest complete bid, computed.
+function leadingBid(tender, bids) {
+  return rankBids(tender, bids).find(r => r.coverage.complete) || null;
+}
+
+// Every price ever placed, newest first, revisions included — the drop-by-drop
+// story of the auction ("13.90 … then 12.90 an hour later").
+function bidHistory(tender, bids) {
+  return bids
+    .map(b => ({ bid: b, totals: bidTotals(tender, b), coverage: bidCoverage(tender, b) }))
+    .sort((a, b) => new Date(b.bid.createdAt) - new Date(a.bid.createdAt));
 }
 
 // ---- split award ------------------------------------------------------------
@@ -281,7 +277,6 @@ function splitAward(tender, bids) {
 function marketMedian(materialKey, unit, allTenders, allBids) {
   const prices = [];
   for (const t of allTenders) {
-    if (isSealed(t)) continue;               // sealed bids never leak into stats
     const tb = allBids.filter(b => b.tenderId === t.id);
     t.items.forEach((item, i) => {
       if (item.material !== materialKey || item.unit !== unit) return;

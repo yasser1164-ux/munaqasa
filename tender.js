@@ -1,23 +1,21 @@
-// ---- ONE REQUEST ------------------------------------------------------------
-// Three screens in one, decided by who is looking and what the clock says:
-//   · the buyer, while bidding is open  → how many sealed bids are in, and the
-//     link to send suppliers;
-//   · a supplier, while bidding is open → the bid form (and their own bid back);
-//   · everyone, after the closing time  → every bid opened at once, ranked on
-//     landed cost, with the line-by-line split award underneath.
-// All text renders through tr() (i18n.js); the language toggle re-renders the
-// page, preserving anything half-typed into the bid form.
+// ---- ONE AUCTION ------------------------------------------------------------
+// Two screens, decided only by the clock:
+//   · LIVE   — the price to beat, the standings, the drop-by-drop history, and
+//              (for a supplier) the form to go lower. Everything is public;
+//              undercutting is the whole point.
+//   · ENDED  — the lowest complete price won, automatically. Nobody picks.
+// The page polls for new prices while an auction is live, because a live
+// auction that only updates on reload is not live.
 
 const TENDER_ID = new URLSearchParams(location.search).get('id');
 const JUST_POSTED = new URLSearchParams(location.search).get('posted') === '1';
 
 let T = null;
-let WEIGHT = 0.75;          // price vs speed in the value score
-let BID_DRAFT_SHOWN = false;
-let LAST_SEALED = null;     // last rendered sealed/open state, for the ticker below
+let BID_FORM_OPEN = false;   // supplier asked to (re)enter a price
+let LAST_LIVE = null;        // last rendered live/ended state
 
-// A supplier may revise their price before the close; only their latest bid
-// counts, so earlier drafts never inflate the count or the comparison.
+// A supplier may drop their price as often as they like; only their latest
+// price stands in the ranking. The earlier ones live on in the history.
 function activeBids(t) {
   const byBidder = new Map();
   for (const b of mzBidsFor(t.id)) {
@@ -35,7 +33,6 @@ function tenderUrl(t) {
   return `${location.origin}${location.pathname}?id=${encodeURIComponent(t.id)}`;
 }
 
-// The message that actually gets pasted into a supplier WhatsApp group.
 function shareText(t) {
   const lines = t.items.map(i =>
     `• ${qtyText(i.qty)} ${unitShort(i.unit)} — ${matL(materialOf(i.material))}${i.spec ? ` (${i.spec})` : ''}`).join('\n');
@@ -65,9 +62,10 @@ function shareBlock(t) {
 function renderHead() {
   const st = tenderStatus(T);
   const bids = activeBids(T);
-  const bidFact = T.awardedBidId ? tr('fact.awarded')
-    : isSealed(T) ? tr('fact.sealed', { n: mzSealedCount(T) })
-    : tr('fact.opened', { n: bids.length });
+  const winner = isLive(T) ? null : leadingBid(T, bids);
+  const bidFact = winner
+    ? esc(supplierName(winner.bid))
+    : String(mzBidderCount(T));
 
   document.getElementById('head').innerHTML = `
     <div class="head-row">
@@ -79,14 +77,14 @@ function renderHead() {
     <div class="facts">
       <div class="fact"><b>${tr('fact.needed')}</b><span>${fmtDate(T.neededBy)}</span></div>
       <div class="fact"><b>${tr('fact.closes')}</b><span>${fmtDateTime(T.closesAt)}</span></div>
-      <div class="fact"><b>${tr('fact.bids')}</b><span>${esc(bidFact)}</span></div>
+      <div class="fact"><b>${winner ? tr('fact.won') : tr('fact.bids')}</b><span>${bidFact}</span></div>
       ${T.site ? `<div class="fact"><b>${tr('fact.site')}</b><span style="font-size:13px;font-weight:600">${esc(T.site)}</span></div>` : ''}
     </div>
     ${T.notes ? `<div class="card"><h2>${tr('cond.h')}</h2><p style="margin:0">${esc(T.notes)}</p></div>` : ''}`;
 }
 
 function renderItems() {
-  const rows = T.items.map((i, n) => {
+  const rows = T.items.map((i) => {
     const m = materialOf(i.material);
     const mk = marketMedian(i.material, i.unit, MZ_BOARD.tenders, MZ_BOARD.bids);
     return `<tr>
@@ -110,10 +108,95 @@ function renderItems() {
   </div>`;
 }
 
-// ---- supplier: the bid form -------------------------------------------------
+// ---- the live ticker --------------------------------------------------------
 
-function bidFormHtml(existing) {
+function tickerHtml(bids) {
+  const best = leadingBid(T, bids);
+  if (!best) {
+    return `<div class="ticker empty">
+      <div class="ticker-label">${tr('live.none')}</div>
+      <p>${tr('live.noneHint')}</p>
+    </div>`;
+  }
+  const mine = best.bid.bidderKey === mzMe().key;
+  return `<div class="ticker">
+    <div class="ticker-label">${tr('live.lowest')} <span class="pulse">● ${tr('live.updating')}</span></div>
+    <div class="ticker-price">${money(best.totals.total)}</div>
+    <div class="ticker-who">${tr('live.from', { s: esc(supplierName(best.bid)) })}${mine ? ` — ${tr('live.youLead')}` : ''}</div>
+    <div class="ticker-clock">${countdown(T.closesAt)}</div>
+  </div>`;
+}
+
+function standingsHtml(bids, opts = {}) {
+  const ranked = rankBids(T, bids);
   const me = mzMe();
+  const rows = ranked.map((r, n) => {
+    const b = r.bid;
+    const first = n === 0 && r.coverage.complete;
+    const isMine = b.bidderKey === me.key;
+    return `<tr class="${first ? 'winner' : ''} ${r.coverage.complete ? '' : 'partial'}">
+      <td><span class="rank ${first ? 'first' : ''}">${n + 1}</span></td>
+      <td class="who">
+        <b>${esc(supplierName(b))}${first && opts.final ? ' 🏆' : ''}${isMine ? ` <span class="you">${tr('live.myPrice')}</span>` : ''}</b>
+        <span>${r.coverage.complete ? tr('cmp.allLines') : tr('cmp.someLines', { a: r.coverage.priced, b: r.coverage.total })}${b.notes ? ` · ${tr('cmp.seeNote')}` : ''}</span>
+      </td>
+      <td class="num">${tr('d.short', { n: esc(r.lead) })}</td>
+      <td>${esc(termsLabel(b.terms))}</td>
+      <td class="num">${money(r.totals.delivery)}</td>
+      <td class="num"><b>${money(r.totals.total)}</b></td>
+    </tr>`;
+  }).join('');
+
+  const notes = ranked.filter(r => r.bid.notes).map(r =>
+    `<p class="hint"><b>${esc(supplierName(r.bid))}:</b> ${esc(r.bid.notes)}</p>`).join('');
+
+  return `<div class="card">
+    <h2>${opts.final ? tr('cmp.h') : tr('live.standings')}</h2>
+    <p>${opts.final ? tr('cmp.d', { p: Math.round(VAT_RATE * 100) }) : tr('live.rule')}</p>
+    <p class="hint swipe">${tr('cmp.swipe')}</p>
+    <div class="scroll-x"><table class="cmp">
+      <thead><tr>
+        <th>#</th><th>${tr('th.supplier')}</th><th class="num">${tr('th.lead')}</th><th>${tr('th.terms')}</th>
+        <th class="num">${tr('th.delivery')}</th><th class="num">${tr('th.landed')}</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    ${notes}
+  </div>`;
+}
+
+// The drop-by-drop story: "opened at 51,000 … dropped to 48,300 an hour later".
+function historyHtml(all) {
+  const hist = bidHistory(T, all);
+  if (hist.length < 2) return '';
+  const seen = new Set();
+  const rows = hist.slice(0, 12).map(h => {
+    const firstFromThem = !seen.has(h.bid.bidderKey);
+    seen.add(h.bid.bidderKey);
+    // walking newest-first, the LAST row we see from a bidder is their opening price
+    return `<li>
+      <span class="h-price">${money(h.totals.total)}</span>
+      <span class="h-who">${esc(supplierName(h.bid))}</span>
+      <span class="h-when">${fmtDateTime(h.bid.createdAt)}</span>
+    </li>`;
+  }).join('');
+  return `<div class="card">
+    <h2>${tr('live.history')}</h2>
+    <p>${tr('live.historyD')}</p>
+    <ul class="history">${rows}</ul>
+  </div>`;
+}
+
+// ---- supplier: place or drop a price ----------------------------------------
+
+function bidFormHtml(existing, bids) {
+  const me = mzMe();
+  const best = leadingBid(T, bids);
+  const iLead = best && best.bid.bidderKey === me.key;
+  const target = !best ? tr('live.first')
+    : iLead ? tr('live.youLead')
+    : tr('live.beat', { p: money(best.totals.total) });
+
   const lines = T.items.map((i, n) => {
     const m = materialOf(i.material);
     const val = existing && existing.lines[n] != null ? existing.lines[n] : '';
@@ -131,7 +214,8 @@ function bidFormHtml(existing) {
   }).join('');
 
   return `<div class="card">
-    <h2>${existing ? tr('bid.h.rev') : tr('bid.h.new')}</h2>
+    <h2>${existing ? tr('live.lowerBtn') : tr('bid.h.new')}</h2>
+    <p class="target">${target}</p>
     <p>${tr('bid.d')}</p>
     ${lines}
     <div class="grid2" style="margin-top:16px">
@@ -159,7 +243,7 @@ function bidFormHtml(existing) {
       <textarea id="b-notes" maxlength="400" placeholder="${esc(tr('bid.notes.ph'))}">${existing ? esc(existing.notes || '') : ''}</textarea></label>
     <p class="err" id="bid-err" hidden></p>
     <div class="btn-row" style="margin-top:6px">
-      <button class="btn btn-lg" id="bid-submit">${existing ? tr('bid.sendRev') : tr('bid.send')}</button>
+      <button class="btn btn-lg" id="bid-submit">${existing ? tr('live.lowerBtn') : tr('bid.send')}</button>
     </div>
     <p class="hint">${tr('bid.sealedHint', { t: fmtDateTime(T.closesAt) })}</p>
   </div>`;
@@ -180,8 +264,6 @@ function readBidDraft() {
   };
 }
 
-// Live landed cost while typing — the supplier sees the number the buyer will
-// rank them on, not just their own unit prices.
 function refreshBidTotals() {
   const draft = readBidDraft();
   T.items.forEach((item, i) => {
@@ -221,6 +303,17 @@ function wireBidForm(existing) {
       err.hidden = false;
       return;
     }
+    // In an auction you go down, never up: a "revision" that raises your own
+    // standing price would just be noise on the board.
+    if (existing) {
+      const now = bidTotals(T, draft).total;
+      const before = bidTotals(T, existing).total;
+      if (now >= before) {
+        err.textContent = tr('bid.errHigher', { p: money(before) });
+        err.hidden = false;
+        return;
+      }
+    }
     const btn = document.getElementById('bid-submit');
     btn.disabled = true;
     btn.textContent = tr('bid.sending');
@@ -232,79 +325,29 @@ function wireBidForm(existing) {
       supplierPhone: document.getElementById('b-phone').value.trim(),
       notes: document.getElementById('b-notes').value.trim()
     });
-    BID_DRAFT_SHOWN = false;
+    BID_FORM_OPEN = false;
     render();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
 
-function myBidSummary(bid) {
+function myStandingHtml(bid, bids) {
+  const ranked = rankBids(T, bids);
+  const pos = ranked.findIndex(r => r.bid.id === bid.id) + 1;
+  const best = leadingBid(T, bids);
+  const iLead = best && best.bid.id === bid.id;
   const tot = bidTotals(T, bid);
-  const cov = bidCoverage(T, bid);
-  return `<div class="card">
-    <h2>${tr('my.h')}</h2>
-    <p>${tr('my.d', { a: fmtDateTime(bid.createdAt), b: fmtDateTime(T.closesAt) })}</p>
+  return `<div class="card mystanding">
+    <h2>${iLead ? tr('live.youLead') : tr('live.youAre', { n: pos, p: money(best ? best.totals.total : 0) })}</h2>
     <div class="totals">
-      <div><span>${tr('tot.goods', { a: cov.priced, b: cov.total })}</span><span>${money(tot.goods)}</span></div>
-      <div><span>${tr('tot.delivery')}</span><span>${money(tot.delivery)}</span></div>
+      <div><span>${tr('live.myPrice')}</span><span>${money(tot.total)}</span></div>
       <div><span>${tr('my.lead')}</span><span>${tr('my.leadVal', { n: dayWord(Number(bid.leadDays) || 1), t: esc(termsLabel(bid.terms)) })}</span></div>
-      <div class="grand"><span>${tr('tot.landed')}</span><span>${money(tot.total)}</span></div>
     </div>
-    <div class="btn-row"><button class="btn btn-ghost" id="revise">${tr('my.revise')}</button></div>
+    <div class="btn-row"><button class="btn" id="revise">${tr('live.lowerBtn')}</button></div>
   </div>`;
 }
 
-// ---- comparison -------------------------------------------------------------
-
-function comparisonHtml(bids) {
-  const ranked = scoreBids(T, bids, WEIGHT);
-  const canAward = mzIsMine(T) && !T.awardedBidId;
-
-  const rows = ranked.map((r, n) => {
-    const b = r.bid;
-    const first = n === 0 && r.coverage.complete;
-    const won = T.awardedBidId === b.id;
-    const delta = r.deltaVsBest == null ? '—'
-      : r.deltaVsBest === 0 ? `<span class="best">${tr('cmp.cheapest')}</span>`
-      : `<span class="delta">+${money(r.deltaVsBest)}</span>`;
-    return `<tr class="${won || first ? 'winner' : ''} ${r.coverage.complete ? '' : 'partial'}">
-      <td><span class="rank ${first ? 'first' : ''}">${n + 1}</span></td>
-      <td class="who">
-        <b>${esc(supplierName(b))}${won ? ' 🏆' : ''}</b>
-        <span>${r.coverage.complete ? tr('cmp.allLines') : tr('cmp.someLines', { a: r.coverage.priced, b: r.coverage.total })}${b.notes ? ` · ${tr('cmp.seeNote')}` : ''}</span>
-      </td>
-      <td class="num">${tr('d.short', { n: esc(r.lead) })}</td>
-      <td>${esc(termsLabel(b.terms))}</td>
-      <td class="num">${money(r.totals.delivery)}</td>
-      <td class="num"><b>${money(r.totals.total)}</b></td>
-      <td class="num">${delta}</td>
-      <td class="num">${r.score == null ? `<span class="delta">${tr('cmp.notRanked')}</span>` : r.score}</td>
-      ${canAward ? `<td><button class="btn" data-award="${esc(b.id)}">${tr('cmp.award')}</button></td>` : ''}
-    </tr>`;
-  }).join('');
-
-  const notes = ranked.filter(r => r.bid.notes).map(r =>
-    `<p class="hint"><b>${esc(supplierName(r.bid))}:</b> ${esc(r.bid.notes)}</p>`).join('');
-
-  return `<div class="card">
-    <h2>${tr('cmp.h')}</h2>
-    <p>${tr('cmp.d', { p: Math.round(VAT_RATE * 100) })}</p>
-    <div class="weight">
-      <label for="w">${tr('cmp.weight', { p: Math.round(WEIGHT * 100), q: Math.round((1 - WEIGHT) * 100) })}</label>
-      <input id="w" type="range" min="50" max="100" step="5" value="${Math.round(WEIGHT * 100)}" />
-    </div>
-    <p class="hint swipe">${tr('cmp.swipe')}</p>
-    <div class="scroll-x"><table class="cmp">
-      <thead><tr>
-        <th>#</th><th>${tr('th.supplier')}</th><th class="num">${tr('th.lead')}</th><th>${tr('th.terms')}</th>
-        <th class="num">${tr('th.delivery')}</th><th class="num">${tr('th.landed')}</th>
-        <th class="num">${tr('th.vsbest')}</th><th class="num">${tr('th.score')}</th>${canAward ? '<th></th>' : ''}
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>
-    ${notes}
-  </div>`;
-}
+// ---- line-by-line + split award (information, either way) -------------------
 
 function lineMatrixHtml(bids) {
   const head = bids.map(b => `<th class="num">${esc(supplierName(b))}</th>`).join('');
@@ -368,95 +411,57 @@ function splitHtml(bids) {
   </div>`;
 }
 
-function awardedBanner(bids) {
-  const won = bids.find(b => b.id === T.awardedBidId) ||
-              MZ_BOARD.bids.find(b => b.id === T.awardedBidId);
-  if (!won) return '';
-  const tot = bidTotals(T, won);
-  const wa = won.supplierPhone
-    ? ` <a class="btn" style="margin:0 8px" href="https://wa.me/${esc(won.supplierPhone.replace(/[^0-9]/g, ''))}" target="_blank" rel="noopener">${tr('aw.msg')}</a>`
-    : '';
-  return `<div class="awarded-note">
-    ${tr('aw.banner', { s: esc(supplierName(won)), p: money(tot.total), d: dayWord(Number(won.leadDays) || 1), t: esc(termsLabel(won.terms)) })}
-    ${T.awardedAt ? tr('aw.at', { t: fmtDateTime(T.awardedAt) }) : ''}${wa}
-  </div>`;
-}
-
-// ---- the three screens ------------------------------------------------------
+// ---- the two screens --------------------------------------------------------
 
 function renderAction() {
   const el = document.getElementById('action');
+  const all = mzBidsFor(T.id);
   const bids = activeBids(T);
   const mine = mzIsMine(T);
 
-  if (isSealed(T)) {
-    if (mine) {
-      el.innerHTML = `
-        <div class="sealed">
-          <div style="font-size:26px">🔒</div>
-          <div class="big">${sealedBidsWord(mzSealedCount(T))}</div>
-          <p>${tr('sealed.p', { t: fmtDateTime(T.closesAt), cd: countdown(T.closesAt) })}</p>
-        </div>
-        ${shareBlock(T)}`;
-    } else {
-      const my = mzMyBid(T.id);
-      el.innerHTML = (my && !BID_DRAFT_SHOWN) ? myBidSummary(my) : bidFormHtml(my);
-      if (my && !BID_DRAFT_SHOWN) {
-        document.getElementById('revise').addEventListener('click', () => {
-          BID_DRAFT_SHOWN = true;
-          renderAction();
-        });
-      } else {
-        wireBidForm(my);
-      }
-    }
+  if (isLive(T)) {
+    const my = mzMyBid(T.id);
+    const showForm = !mine && (BID_FORM_OPEN || !my);
+    el.innerHTML =
+      tickerHtml(bids) +
+      (!mine && my && !BID_FORM_OPEN ? myStandingHtml(my, bids) : '') +
+      (showForm ? bidFormHtml(my, bids) : '') +
+      (bids.length ? standingsHtml(bids) : '') +
+      historyHtml(all) +
+      (mine ? shareBlock(T) : '');
+
+    if (showForm) wireBidForm(my);
+    const revise = document.getElementById('revise');
+    if (revise) revise.addEventListener('click', () => { BID_FORM_OPEN = true; renderAction(); });
     return;
   }
 
-  // Closed: everything opens for everyone.
-  if (!bids.length) {
-    el.innerHTML = `<div class="empty">${tr('closedEmpty', { t: fmtDateTime(T.closesAt) })}
-      ${mine ? tr('closedEmpty.mine') : ''}</div>`;
-    return;
+  // The clock stopped: the lowest complete price won, on its own.
+  const winner = leadingBid(T, bids);
+  const iWon = winner && winner.bid.bidderKey === mzMe().key;
+  let banner;
+  if (!winner) {
+    banner = `<div class="empty">${tr('win.none')}</div>`;
+  } else {
+    const wa = winner.bid.supplierPhone
+      ? ` <a class="btn" style="margin:0 8px" href="https://wa.me/${esc(winner.bid.supplierPhone.replace(/[^0-9]/g, ''))}" target="_blank" rel="noopener">${tr('aw.msg')}</a>`
+      : '';
+    banner = `<div class="awarded-note">
+      ${iWon ? `<b>${tr('win.youWon')}</b><br>` : ''}
+      ${tr('win.banner', {
+        s: esc(supplierName(winner.bid)), p: money(winner.totals.total),
+        d: dayWord(Number(winner.bid.leadDays) || 1), t: esc(termsLabel(winner.bid.terms))
+      })}
+      <div class="hint" style="margin-top:6px">${tr('win.auto')}</div>${wa}
+    </div>`;
   }
 
-  // Both tables read in the same order as the ranking, so the columns line up
-  // with the rows above them.
-  const ordered = scoreBids(T, bids, WEIGHT).map(r => r.bid);
+  const ordered = rankBids(T, bids).map(r => r.bid);
   el.innerHTML =
-    (T.awardedBidId ? awardedBanner(bids) : '') +
-    comparisonHtml(bids) +
-    (bids.length > 1 ? lineMatrixHtml(ordered) + splitHtml(bids) : '');
-
-  // Dragging updates the label live; the table is rebuilt on release so the
-  // slider does not lose the finger mid-drag on a phone.
-  const w = document.getElementById('w');
-  if (w) {
-    const label = w.previousElementSibling;
-    w.addEventListener('input', e => {
-      const p = Number(e.target.value);
-      label.textContent = tr('cmp.weight', { p, q: 100 - p });
-    });
-    w.addEventListener('change', e => {
-      WEIGHT = Number(e.target.value) / 100;
-      renderAction();
-      const el2 = document.getElementById('w');
-      if (el2) el2.focus();
-    });
-  }
-
-  el.querySelectorAll('[data-award]').forEach(btn => btn.addEventListener('click', async () => {
-    const b = bids.find(x => x.id === btn.dataset.award);
-    // Awarding a partial bid is allowed — sometimes one line is all you need —
-    // but never by accident: say what it leaves unbought.
-    const cov = bidCoverage(T, b);
-    const gap = cov.complete ? '' : `\n\n${tr('aw.confirm.gap', { a: cov.priced, b: cov.total })}`;
-    if (!confirm(`${tr('aw.confirm', { s: supplierName(b), p: money(bidTotals(T, b).total) })}${gap}\n\n${tr('aw.confirm.final')}`)) return;
-    btn.disabled = true;
-    await mzAward(T.id, b.id);
-    render();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }));
+    banner +
+    (bids.length ? standingsHtml(bids, { final: true }) : '') +
+    (bids.length > 1 ? lineMatrixHtml(ordered) + splitHtml(bids) : '') +
+    historyHtml(all);
 }
 
 function renderPosted() {
@@ -466,7 +471,7 @@ function renderPosted() {
 }
 
 function render() {
-  LAST_SEALED = T ? isSealed(T) : null;
+  LAST_LIVE = T ? isLive(T) : null;
   if (!T) {
     document.getElementById('head').innerHTML =
       `<div class="empty">${tr('notFound')}
@@ -480,8 +485,8 @@ function render() {
   renderAction();
 }
 
-// The language toggle re-renders the page; a half-typed bid form is snapshotted
-// and restored so flipping languages never costs the supplier their numbers.
+// The language toggle re-renders; a half-typed price is snapshotted and put
+// back, so switching language never costs a supplier their numbers.
 window.onLangChange = () => {
   if (!T) { render(); return; }
   const hadForm = !!document.querySelector('.b-line');
@@ -492,26 +497,28 @@ window.onLangChange = () => {
     phone: document.getElementById('b-phone').value,
     notes: document.getElementById('b-notes').value
   } : null;
+  if (hadForm) BID_FORM_OPEN = true;
   render();
-  if (snap && document.querySelector('.b-line')) {
-    snap.draft.lines.forEach((v, i) => {
-      const el = document.querySelector(`.b-line[data-i="${i}"]`);
-      if (el) el.value = v == null ? '' : v;
-    });
-    document.getElementById('b-delivery').value = snap.draft.deliveryFee || '';
-    document.getElementById('b-discount').value = snap.draft.discount || '';
-    document.getElementById('b-lead').value = snap.draft.leadDays;
-    document.getElementById('b-validity').value = snap.draft.validityDays;
-    document.getElementById('b-terms').value = snap.draft.terms;
-    document.getElementById('b-name').value = snap.name;
-    document.getElementById('b-company').value = snap.company;
-    document.getElementById('b-phone').value = snap.phone;
-    document.getElementById('b-notes').value = snap.notes;
-    refreshBidTotals();
-  }
+  if (snap && document.querySelector('.b-line')) restoreDraft(snap);
 };
 
-// Copy-link works from anywhere on the page.
+function restoreDraft(snap) {
+  snap.draft.lines.forEach((v, i) => {
+    const el = document.querySelector(`.b-line[data-i="${i}"]`);
+    if (el) el.value = v == null ? '' : v;
+  });
+  document.getElementById('b-delivery').value = snap.draft.deliveryFee || '';
+  document.getElementById('b-discount').value = snap.draft.discount || '';
+  document.getElementById('b-lead').value = snap.draft.leadDays;
+  document.getElementById('b-validity').value = snap.draft.validityDays;
+  document.getElementById('b-terms').value = snap.draft.terms;
+  document.getElementById('b-name').value = snap.name;
+  document.getElementById('b-company').value = snap.company;
+  document.getElementById('b-phone').value = snap.phone;
+  document.getElementById('b-notes').value = snap.notes;
+  refreshBidTotals();
+}
+
 document.addEventListener('click', e => {
   const btn = e.target.closest('#copy-link');
   if (!btn) return;
@@ -526,10 +533,15 @@ mzLoadBoard().then(() => {
   render();
 });
 
-// A tender closing while the page is open should open its bids by itself. Only
-// the crossing triggers a full re-render — otherwise just the header is
-// refreshed, so a half-typed bid is never wiped by a countdown tick.
-setInterval(() => {
+// A live auction has to move on its own: pull new prices every 20 seconds, and
+// re-render the moment the clock runs out. A supplier mid-price keeps their
+// typing — only the parts around the form are refreshed.
+setInterval(async () => {
   if (!T) return;
-  if (isSealed(T) !== LAST_SEALED) render(); else renderHead();
-}, 30000);
+  const typing = !!document.querySelector('.b-line');
+  if (isLive(T)) await mzRefresh();
+  T = mzTender(TENDER_ID) || T;
+  if (isLive(T) !== LAST_LIVE) { render(); return; }
+  if (typing) { renderHead(); return; }   // never blow away a half-entered price
+  render();
+}, 20000);
