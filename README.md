@@ -127,8 +127,8 @@ that are easy to get wrong and are handled deliberately:
 ## Identity — and its limits
 
 No accounts. A random key in `localStorage` proves "I posted this" and "this is
-my bid". A supplier sees their own sealed bid because their browser kept a copy,
-not because the server will hand it back. That means:
+my bid" — it is what lets a supplier come back and drop their price, and what
+marks an auction as yours on the board. That means:
 
 - clearing site data, or switching device, loses the thread back to an auction
   you posted or a price you placed — keep the link;
