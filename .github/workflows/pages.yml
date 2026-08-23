@@ -1,0 +1,33 @@
+# Publishes the site to GitHub Pages on every push to main.
+# main stays the source of truth; its content is mirrored to the gh-pages
+# branch, which GitHub Pages serves. (The direct "deploy from Actions" mode
+# can't self-enable — creating the Pages site needs admin rights the workflow
+# token doesn't have — while a gh-pages branch enables Pages automatically.)
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # cache busting: stamp the commit into every local script/css reference
+      # so phones fetch new code after each deploy instead of reusing cached JS
+      # (every page, including the ones in subfolders like bids/)
+      - run: find . -name '*.html' -not -path './.git/*' -exec sed -i "s/__BUILD__/${GITHUB_SHA::8}/g" {} +
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
