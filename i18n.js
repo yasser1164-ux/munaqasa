@@ -11,12 +11,14 @@
 
 const MZ_LANG_KEY = 'munaqasa.lang';
 
+// Arabic first: the app opens in Arabic for everyone. English is there behind
+// the toggle for whoever wants it, and the choice sticks.
 let MZ_LANG = (() => {
   try {
     const saved = localStorage.getItem(MZ_LANG_KEY);
     if (saved === 'ar' || saved === 'en') return saved;
   } catch { /* private mode */ }
-  return (navigator.language || '').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+  return 'ar';
 })();
 
 function mzIsAr() { return MZ_LANG === 'ar'; }
@@ -30,8 +32,8 @@ const MZ_STR = {
 
   // ---- board ----------------------------------------------------------------
   'hero.h1':  { en: 'Let them bid the price down.', ar: 'خلّهم ينزلون السعر.' },
-  'hero.p':   { en: 'Post what the site needs — cement, rebar, ready-mix, blocks — and watch suppliers undercut each other live. Everyone sees the price to beat, so it keeps falling until the clock stops. Then the lowest <b>landed cost</b> wins by itself: unit prices, delivery and VAT, not just the price per bag.',
-                ar: 'انشر احتياج موقعك — أسمنت، حديد، خرسانة جاهزة، بلك — وشاهد الموردين ينزلون على بعض مباشرة. الكل يرى السعر المطلوب كسره، فيستمر بالنزول حتى ينتهي الوقت. عندها تفوز أقل <b>تكلفة واصلة</b> وحدها: أسعار الوحدات مع التوصيل والضريبة، لا سعر الكيس وحده.' },
+  'hero.p':   { en: 'Post what you need, send one link to your suppliers, and watch the price drop live. When the time is up, the cheapest offer wins by itself.',
+                ar: 'انشر طلبك، أرسل رابطًا واحدًا لمورّديك، وشاهد السعر ينزل مباشرة. وعند انتهاء الوقت يفوز أرخص عرض تلقائيًا.' },
   'hero.cta1': { en: '📋 Post a request', ar: '📋 اطرح طلبًا' },
   'hero.cta2': { en: '🔎 Bid on live auctions', ar: '🔎 زايد على المزادات المباشرة' },
   'how1.t': { en: '1 · Post', ar: '١ · انشر' },
@@ -92,9 +94,9 @@ const MZ_STR = {
   'p.qty':  { en: 'Quantity', ar: 'الكمية' },
   'p.unit': { en: 'Unit', ar: 'الوحدة' },
   'p.window':   { en: 'How long the auction runs', ar: 'مدة المزاد' },
-  'p.window.d': { en: 'Suppliers undercut each other until this moment. Then the lowest landed cost wins on its own — you are not asked to pick.',
-                  ar: 'يتنافس الموردون بالنزول حتى هذا الموعد. عندها تفوز أقل تكلفة واصلة وحدها — ولن يُطلب منك الاختيار.' },
-  'p.closes': { en: 'Auction ends at', ar: 'ينتهي المزاد في' },
+  'p.window.d': { en: 'Suppliers keep lowering until the time is up. Then the cheapest wins by itself.',
+                  ar: 'ينزل الموردون بالأسعار حتى ينتهي الوقت، ثم يفوز الأرخص تلقائيًا.' },
+  'p.closes': { en: 'Ends {t}', ar: 'ينتهي {t}' },
   'p.in24':  { en: 'In 24 hours', ar: 'خلال 24 ساعة' },
   'p.in72':  { en: 'In 3 days', ar: 'خلال 3 أيام' },
   'p.in168': { en: 'In a week', ar: 'خلال أسبوع' },
@@ -171,6 +173,7 @@ const MZ_STR = {
   'bid.name.ph':    { en: 'Khalid', ar: 'خالد' },
   'bid.company':    { en: 'Company', ar: 'الشركة' },
   'bid.company.ph': { en: 'Eastern Cement Traders', ar: 'تجار الأسمنت الشرقية' },
+  'bid.who':   { en: 'Your name or company', ar: 'اسمك أو شركتك' },
   'bid.phone': { en: 'Phone', ar: 'الجوال' },
   'bid.notes':    { en: 'Notes to the buyer <em>— optional</em>', ar: 'ملاحظات للمشتري <em>— اختياري</em>' },
   'bid.notes.ph': { en: 'e.g. Stock on the ground, can load tomorrow morning.', ar: 'مثال: البضاعة متوفرة في الساحة، نحمّل صباح الغد.' },

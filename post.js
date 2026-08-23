@@ -14,15 +14,16 @@ const errEl = document.getElementById('post-err');
 // value is the English name; the label shows both.
 document.getElementById('f-city').innerHTML =
   [...CITIES, 'Other'].map(c =>
-    `<option value="${esc(c)}">${esc(c)} · ${esc(CITY_AR[c] || c)}</option>`).join('');
+    `<option value="${esc(c)}">${esc(CITY_AR[c] || c)} · ${esc(c)}</option>`).join('');
 
 // A material's own units come first — nobody buys cement by the square metre —
 // but the full list stays available for the odd job that needs it.
+// Only the units that material is actually sold in — a shorter list is one
+// less thing to think about.
 function unitOptions(materialKey, selected) {
   const m = materialOf(materialKey);
-  const ordered = [...m.units, ...Object.keys(UNITS).filter(u => !m.units.includes(u))];
-  return ordered.map(u =>
-    `<option value="${u}" ${u === selected ? 'selected' : ''}>${esc(UNITS[u].en)} · ${esc(UNITS[u].ar)}</option>`
+  return m.units.map(u =>
+    `<option value="${u}" ${u === selected ? 'selected' : ''}>${esc(UNITS[u].ar)} · ${esc(UNITS[u].en)}</option>`
   ).join('');
 }
 
@@ -33,7 +34,7 @@ function lineHtml(i, line = {}) {
     <label class="field">
       <span data-i18n="p.mat">${tr('p.mat')}</span>
       <select class="l-mat">
-        ${MATERIALS.map(m => `<option value="${m.key}" ${m.key === mat ? 'selected' : ''}>${m.emoji} ${esc(m.en)} · ${esc(m.ar)}</option>`).join('')}
+        ${MATERIALS.map(m => `<option value="${m.key}" ${m.key === mat ? 'selected' : ''}>${m.emoji} ${esc(m.ar)} · ${esc(m.en)}</option>`).join('')}
       </select>
     </label>
     <label class="field">
@@ -80,29 +81,37 @@ linesEl.addEventListener('change', e => {
 
 // ---- defaults ---------------------------------------------------------------
 
-function localInputValue(d) {
-  const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+// The auction length is a choice of three, not a datetime picker.
+let CLOSE_HOURS = 72;
 
-function setCloseIn(hours) {
-  const d = new Date(Date.now() + hours * 3600 * 1000);
+function closesAtDate() {
+  const d = new Date(Date.now() + CLOSE_HOURS * 3600 * 1000);
   d.setMinutes(0, 0, 0);
-  document.getElementById('f-closes').value = localInputValue(d);
+  return d;
 }
 
-setCloseIn(72);
+function updateClosesNote() {
+  document.getElementById('closes-note').textContent =
+    tr('p.closes', { t: fmtDateTime(closesAtDate().toISOString()) });
+}
+
+document.querySelectorAll('[data-close-in]').forEach(b =>
+  b.addEventListener('click', () => {
+    CLOSE_HOURS = Number(b.dataset.closeIn);
+    document.querySelectorAll('[data-close-in]').forEach(x =>
+      x.classList.toggle('active', x === b));
+    updateClosesNote();
+  }));
+
+updateClosesNote();
+window.onLangChange = updateClosesNote;
 
 const needed = new Date();
 needed.setDate(needed.getDate() + 10);
 document.getElementById('f-needed').value = needed.toISOString().slice(0, 10);
 
-document.querySelectorAll('[data-close-in]').forEach(b =>
-  b.addEventListener('click', () => setCloseIn(Number(b.dataset.closeIn))));
-
 const me = mzMe();
 document.getElementById('f-name').value = me.name || '';
-document.getElementById('f-company').value = me.company || '';
 document.getElementById('f-phone').value = me.phone || '';
 
 // ---- submit -----------------------------------------------------------------
@@ -128,13 +137,10 @@ document.getElementById('post-form').addEventListener('submit', async e => {
 
   const title = document.getElementById('f-title').value.trim();
   const items = readLines();
-  const closesRaw = document.getElementById('f-closes').value;
-  const closesAt = closesRaw ? new Date(closesRaw) : null;
+  const closesAt = closesAtDate();
 
   if (!title) return fail(tr('p.err.title'));
   if (!items.length) return fail(tr('p.err.lines'));
-  if (!closesAt || isNaN(closesAt)) return fail(tr('p.err.closes'));
-  if (closesAt <= new Date()) return fail(tr('p.err.past'));
 
   const btn = document.getElementById('post-submit');
   btn.disabled = true;
@@ -142,7 +148,6 @@ document.getElementById('post-form').addEventListener('submit', async e => {
 
   mzSaveMe({
     name: document.getElementById('f-name').value.trim(),
-    company: document.getElementById('f-company').value.trim(),
     phone: document.getElementById('f-phone').value.trim()
   });
   const who = mzMe();
@@ -150,7 +155,7 @@ document.getElementById('post-form').addEventListener('submit', async e => {
   const tender = await mzCreateTender({
     title,
     city: document.getElementById('f-city').value,
-    site: document.getElementById('f-site').value.trim(),
+    site: '',
     neededBy: document.getElementById('f-needed').value,
     closesAt: closesAt.toISOString(),
     items,
