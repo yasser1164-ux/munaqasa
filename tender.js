@@ -73,7 +73,7 @@ function renderHead() {
       <span class="badge ${st.kind}">${esc(st.label)}</span>
       ${mzIsMine(T) ? `<span class="badge mine">${tr('badge.yourReq')}</span>` : ''}
     </div>
-    <p class="sub">${esc(T.ref)} · ${esc(cityLabel(T.city))}${T.buyerCompany ? ` · ${tr('postedBy', { c: esc(T.buyerCompany) })}` : ''}</p>
+    <p class="sub">${esc(T.ref)} · ${esc(cityLabel(T.city))}${(T.buyerCompany || T.buyerName) ? ` · ${tr('postedBy', { c: esc(T.buyerCompany || T.buyerName) })}` : ''}</p>
     <div class="facts">
       <div class="fact"><b>${tr('fact.needed')}</b><span>${fmtDate(T.neededBy)}</span></div>
       <div class="fact"><b>${tr('fact.closes')}</b><span>${fmtDateTime(T.closesAt)}</span></div>
@@ -142,7 +142,6 @@ function standingsHtml(bids, opts = {}) {
       </td>
       <td class="num">${tr('d.short', { n: esc(r.lead) })}</td>
       <td>${esc(termsLabel(b.terms))}</td>
-      <td class="num">${money(r.totals.delivery)}</td>
       <td class="num"><b>${money(r.totals.total)}</b></td>
     </tr>`;
   }).join('');
@@ -153,11 +152,10 @@ function standingsHtml(bids, opts = {}) {
   return `<div class="card">
     <h2>${opts.final ? tr('cmp.h') : tr('live.standings')}</h2>
     <p>${opts.final ? tr('cmp.d', { p: Math.round(VAT_RATE * 100) }) : tr('live.rule')}</p>
-    <p class="hint swipe">${tr('cmp.swipe')}</p>
     <div class="scroll-x"><table class="cmp">
       <thead><tr>
         <th>#</th><th>${tr('th.supplier')}</th><th class="num">${tr('th.lead')}</th><th>${tr('th.terms')}</th>
-        <th class="num">${tr('th.delivery')}</th><th class="num">${tr('th.landed')}</th>
+        <th class="num">${tr('th.landed')}</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
@@ -218,25 +216,18 @@ function bidFormHtml(existing, bids) {
     <p class="target">${target}</p>
     <p>${tr('bid.d')}</p>
     ${lines}
-    <div class="grid2" style="margin-top:16px">
+    <div class="grid3" style="margin-top:16px">
       <label class="field"><span>${tr('bid.delivery')}</span>
         <input id="b-delivery" type="number" min="0" step="any" inputmode="decimal" value="${existing ? esc(existing.deliveryFee || 0) : ''}" placeholder="0" /></label>
-      <label class="field"><span>${tr('bid.discount')}</span>
-        <input id="b-discount" type="number" min="0" step="any" inputmode="decimal" value="${existing ? esc(existing.discount || 0) : ''}" placeholder="0" /></label>
-    </div>
-    <div class="grid3">
       <label class="field"><span>${tr('bid.lead')}</span>
         <input id="b-lead" type="number" min="1" step="1" inputmode="numeric" value="${existing ? esc(existing.leadDays) : '3'}" /></label>
-      <label class="field"><span>${tr('bid.valid')}</span>
-        <input id="b-validity" type="number" min="1" step="1" inputmode="numeric" value="${existing ? esc(existing.validityDays) : '14'}" /></label>
       <label class="field"><span>${tr('bid.terms')}</span>
         <select id="b-terms">${PAYMENT_TERMS.map(k =>
           `<option value="${k}" ${existing && existing.terms === k ? 'selected' : ''}>${esc(termsLabel(k))}</option>`).join('')}</select></label>
     </div>
     <div class="totals" id="b-totals"></div>
-    <div class="grid3" style="margin-top:16px">
-      <label class="field"><span>${tr('bid.name')}</span><input id="b-name" maxlength="60" value="${esc(me.name)}" placeholder="${esc(tr('bid.name.ph'))}" /></label>
-      <label class="field"><span>${tr('bid.company')}</span><input id="b-company" maxlength="80" value="${esc(me.company)}" placeholder="${esc(tr('bid.company.ph'))}" /></label>
+    <div class="grid2" style="margin-top:16px">
+      <label class="field"><span>${tr('bid.who')}</span><input id="b-name" maxlength="80" value="${esc(me.company || me.name)}" placeholder="${esc(tr('bid.company.ph'))}" /></label>
       <label class="field"><span>${tr('bid.phone')}</span><input id="b-phone" type="tel" maxlength="24" value="${esc(me.phone)}" placeholder="05xxxxxxxx" /></label>
     </div>
     <label class="field"><span>${tr('bid.notes')}</span>
@@ -257,9 +248,9 @@ function readBidDraft() {
       return v === '' ? null : Number(v);
     }),
     deliveryFee: Number(document.getElementById('b-delivery').value) || 0,
-    discount: Number(document.getElementById('b-discount').value) || 0,
+    discount: 0,
     leadDays: Number(document.getElementById('b-lead').value) || 1,
-    validityDays: Number(document.getElementById('b-validity').value) || 14,
+    validityDays: 14,
     terms: document.getElementById('b-terms').value
   };
 }
@@ -276,7 +267,6 @@ function refreshBidTotals() {
   document.getElementById('b-totals').innerHTML = `
     <div><span>${tr('tot.goods', { a: cov.priced, b: cov.total })}</span><span>${money(tot.goods)}</span></div>
     <div><span>${tr('tot.delivery')}</span><span>${money(tot.delivery)}</span></div>
-    ${tot.discount ? `<div><span>${tr('tot.discount')}</span><span>− ${money(tot.discount)}</span></div>` : ''}
     <div><span>${tr('tot.vat', { p: Math.round(VAT_RATE * 100) })}</span><span>${money(tot.vat)}</span></div>
     <div class="grand"><span>${tr('tot.landed')}</span><span>${money(tot.total)}</span></div>`;
 }
@@ -296,9 +286,8 @@ function wireBidForm(existing) {
       err.hidden = false;
       return;
     }
-    const company = document.getElementById('b-company').value.trim();
-    const name = document.getElementById('b-name').value.trim();
-    if (!company && !name) {
+    const who = document.getElementById('b-name').value.trim();
+    if (!who) {
       err.textContent = tr('bid.err.who');
       err.hidden = false;
       return;
@@ -318,10 +307,10 @@ function wireBidForm(existing) {
     btn.disabled = true;
     btn.textContent = tr('bid.sending');
 
-    mzSaveMe({ name, company, phone: document.getElementById('b-phone').value.trim() });
+    mzSaveMe({ name: who, company: who, phone: document.getElementById('b-phone').value.trim() });
     await mzCreateBid({
       tenderId: T.id, ...draft,
-      supplierName: name, supplierCompany: company,
+      supplierName: who, supplierCompany: who,
       supplierPhone: document.getElementById('b-phone').value.trim(),
       notes: document.getElementById('b-notes').value.trim()
     });
@@ -349,36 +338,11 @@ function myStandingHtml(bid, bids) {
 
 // ---- line-by-line + split award (information, either way) -------------------
 
-function lineMatrixHtml(bids) {
-  const head = bids.map(b => `<th class="num">${esc(supplierName(b))}</th>`).join('');
-  const rows = T.items.map((item, i) => {
-    const prices = bids.map(b => lineUnitPrice(b, i));
-    const valid = prices.filter(p => p != null);
-    const best = valid.length ? Math.min(...valid) : null;
-    const cells = prices.map(p => p == null
-      ? '<td class="num" style="color:var(--muted)">—</td>'
-      : `<td class="num ${p === best ? 'best' : ''}">${money(p)}</td>`).join('');
-    const m = materialOf(item.material);
-    return `<tr>
-      <td><b>${m.emoji} ${esc(matL(m))}</b><div class="spec">${qtyText(item.qty)} ${esc(unitShort(item.unit))}</div></td>
-      ${cells}
-    </tr>`;
-  }).join('');
-
-  return `<div class="card">
-    <h2>${tr('lbl.h')}</h2>
-    <p>${tr('lbl.d')}</p>
-    <p class="hint swipe">${tr('lbl.swipe')}</p>
-    <div class="scroll-x"><table>
-      <thead><tr><th>${tr('th.material')}</th>${head}</tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>
-  </div>`;
-}
-
 function splitHtml(bids) {
   const s = splitAward(T, bids);
-  if (!s) return '';
+  // Only worth showing when it changes the decision: real savings, or no
+  // single supplier covered everything. Otherwise it is just another table.
+  if (!s || (s.savings != null && !s.worthIt)) return '';
   const picks = s.picks.map(p => {
     const m = materialOf(p.item.material);
     return `<tr>
@@ -456,11 +420,10 @@ function renderAction() {
     </div>`;
   }
 
-  const ordered = rankBids(T, bids).map(r => r.bid);
   el.innerHTML =
     banner +
     (bids.length ? standingsHtml(bids, { final: true }) : '') +
-    (bids.length > 1 ? lineMatrixHtml(ordered) + splitHtml(bids) : '') +
+    (bids.length > 1 ? splitHtml(bids) : '') +
     historyHtml(all);
 }
 
@@ -493,7 +456,6 @@ window.onLangChange = () => {
   const snap = hadForm ? {
     draft: readBidDraft(),
     name: document.getElementById('b-name').value,
-    company: document.getElementById('b-company').value,
     phone: document.getElementById('b-phone').value,
     notes: document.getElementById('b-notes').value
   } : null;
@@ -508,12 +470,9 @@ function restoreDraft(snap) {
     if (el) el.value = v == null ? '' : v;
   });
   document.getElementById('b-delivery').value = snap.draft.deliveryFee || '';
-  document.getElementById('b-discount').value = snap.draft.discount || '';
   document.getElementById('b-lead').value = snap.draft.leadDays;
-  document.getElementById('b-validity').value = snap.draft.validityDays;
   document.getElementById('b-terms').value = snap.draft.terms;
   document.getElementById('b-name').value = snap.name;
-  document.getElementById('b-company').value = snap.company;
   document.getElementById('b-phone').value = snap.phone;
   document.getElementById('b-notes').value = snap.notes;
   refreshBidTotals();

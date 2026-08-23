@@ -31,7 +31,6 @@
     <form id="post-form" autocomplete="on">
       <section class="card">
         <h2 data-i18n="p.job">The job</h2>
-        <p data-i18n="p.job.d">What is being bought, and where it has to land.</p>
         <label class="field">
           <span data-i18n="p.title">Request title</span>
           <input id="f-title" required maxlength="120" data-i18n-ph="p.title.ph" placeholder="e.g. Villa foundation package — 3 units" />
@@ -46,56 +45,32 @@
             <input id="f-needed" type="date" required />
           </label>
         </div>
-        <label class="field">
-          <span data-i18n-html="p.site">Delivery site <em>— access, gate, offloading hours</em></span>
-          <input id="f-site" maxlength="160" data-i18n-ph="p.site.ph" placeholder="e.g. Al Aqrabiyah plot 44 — deliver 6–11 AM, crane on site" />
-        </label>
-      </section>
-
-      <section class="card">
-        <h2 data-i18n="p.mats">Materials</h2>
-        <p data-i18n="p.mats.d">One line per item. Quantities are what suppliers price against, so
-           put the real number — not a round one.</p>
         <div id="lines"></div>
         <button type="button" class="btn btn-ghost" id="add-line" data-i18n="p.addline">+ Add material</button>
       </section>
 
       <section class="card">
-        <h2 data-i18n="p.window">Bidding window</h2>
-        <p data-i18n="p.window.d">Nobody — you included — can see a price before this moment. At closing
-           time every bid opens at once.</p>
-        <label class="field">
-          <span data-i18n="p.closes">Bids close at</span>
-          <input id="f-closes" type="datetime-local" required />
-        </label>
-        <div class="btn-row" style="margin-top:0">
-          <button type="button" class="btn btn-ghost" data-close-in="24" data-i18n="p.in24">In 24 hours</button>
-          <button type="button" class="btn btn-ghost" data-close-in="72" data-i18n="p.in72">In 3 days</button>
-          <button type="button" class="btn btn-ghost" data-close-in="168" data-i18n="p.in168">In a week</button>
+        <h2 data-i18n="p.window">How long the auction runs</h2>
+        <p data-i18n="p.window.d">Suppliers keep lowering until the time is up. Then the cheapest wins by itself.</p>
+        <div class="chips" style="margin-bottom:6px">
+          <button type="button" class="chip" data-close-in="24" data-i18n="p.in24">In 24 hours</button>
+          <button type="button" class="chip active" data-close-in="72" data-i18n="p.in72">In 3 days</button>
+          <button type="button" class="chip" data-close-in="168" data-i18n="p.in168">In a week</button>
         </div>
-        <p class="hint" data-i18n="p.window.hint">Urgent pours get a day; a big package deserves a week —
-           short windows cost you bidders, long ones cost you time.</p>
-      </section>
-
-      <section class="card">
-        <h2 data-i18n="p.cond">Conditions &amp; contact</h2>
-        <p data-i18n="p.cond.d">Certificates, staged deliveries, who the driver calls.</p>
+        <p class="hint" id="closes-note"></p>
         <label class="field">
           <span data-i18n-html="p.notes">Conditions <em>— optional</em></span>
           <textarea id="f-notes" maxlength="600" data-i18n-ph="p.notes.ph" placeholder="e.g. Mill certificate required for rebar. Staged delivery, 15,000 blocks per week."></textarea>
         </label>
-        <div class="grid3">
+        <div class="grid2">
           <label class="field"><span data-i18n="p.name">Your name</span><input id="f-name" maxlength="60" data-i18n-ph="p.name.ph" placeholder="Abu Faisal" /></label>
-          <label class="field"><span data-i18n="p.company">Company</span><input id="f-company" maxlength="80" data-i18n-ph="p.company.ph" placeholder="Najd Build" /></label>
           <label class="field"><span data-i18n-html="p.phone">Phone <em>— optional</em></span><input id="f-phone" type="tel" maxlength="24" placeholder="05xxxxxxxx" /></label>
         </div>
-        <p class="hint" data-i18n="p.contact.hint">Shown to suppliers so they can ask before they quote.
-           Leave the phone out if you would rather they use the bid notes.</p>
       </section>
 
       <p class="err" id="post-err" hidden></p>
       <div class="btn-row">
-        <button class="btn btn-lg" type="submit" id="post-submit" data-i18n="p.submit">Post request &amp; get the supplier link</button>
+        <button class="btn btn-lg" type="submit" id="post-submit" data-i18n="p.submit">Start the auction &amp; get the supplier link</button>
         <a class="btn btn-lg btn-ghost" href="index.html" data-i18n="p.cancel">Cancel</a>
       </div>
     </form>

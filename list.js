@@ -5,7 +5,6 @@
 // through tr() (i18n.js), so the language toggle re-renders the whole board.
 
 let LIST_STATUS = 'all';
-let LIST_MAT = 'all';
 let LIST_Q = '';
 
 const STATUS_FILTERS = [
@@ -70,7 +69,6 @@ function tenderCard(t) {
 function matchesFilters(t) {
   const st = tenderStatus(t).kind;
   if (LIST_STATUS !== 'all' && st !== LIST_STATUS) return false;
-  if (LIST_MAT !== 'all' && !t.items.some(i => i.material === LIST_MAT)) return false;
   if (LIST_Q) {
     const hay = [
       t.title, t.ref, t.city, cityLabel(t.city), t.site, t.notes,
@@ -85,12 +83,6 @@ function renderChips() {
   document.getElementById('status-chips').innerHTML = STATUS_FILTERS.map(f =>
     `<button class="chip ${LIST_STATUS === f.key ? 'active' : ''}" data-status="${f.key}">${esc(tr(f.label))}</button>`
   ).join('');
-
-  // Only materials somebody is actually asking for get a chip.
-  const present = MATERIALS.filter(m => MZ_BOARD.tenders.some(t => t.items.some(i => i.material === m.key)));
-  document.getElementById('mat-chips').innerHTML =
-    `<button class="chip ${LIST_MAT === 'all' ? 'active' : ''}" data-mat="all">${tr('f.allmats')}</button>` +
-    present.map(m => `<button class="chip ${LIST_MAT === m.key ? 'active' : ''}" data-mat="${m.key}">${m.emoji} ${esc(matL(m))}</button>`).join('');
 }
 
 function renderBoard() {
@@ -124,13 +116,6 @@ document.getElementById('status-chips').addEventListener('click', e => {
   const b = e.target.closest('[data-status]');
   if (!b) return;
   LIST_STATUS = b.dataset.status;
-  render();
-});
-
-document.getElementById('mat-chips').addEventListener('click', e => {
-  const b = e.target.closest('[data-mat]');
-  if (!b) return;
-  LIST_MAT = b.dataset.mat;
   render();
 });
 
