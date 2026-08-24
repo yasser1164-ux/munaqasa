@@ -1,59 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Munaqasa — Bid for construction materials</title>
-<meta name="description" content="Post what your site needs, let suppliers bid sealed against each other, and buy on landed cost instead of on the first quote." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%8F%97%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>مناقصة — مزادات مواد البناء</title>
+<meta name="description" content="انشر طلبك ودع الموردين ينزلون السعر مباشرة. أقل سعر يفوز." />
+<meta name="theme-color" content="#0a0e13" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="مناقصة · Munaqasa" />
+<meta property="og:title" content="مناقصة — مزادات مواد البناء" />
+<meta property="og:description" content="انشر طلبك ودع الموردين ينزلون السعر مباشرة. أقل سعر يفوز." />
+<meta property="og:url" content="https://yasser1164-ux.github.io/munaqasa/" />
+<meta property="og:image" content="https://yasser1164-ux.github.io/munaqasa/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="ar_SA" />
+<meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css?v=__BUILD__" />
 </head>
 <body data-i18n-title="title.board">
   <header class="top">
     <a class="brand" href="index.html">
-      <span class="brand-mark">🏗️</span>
-      <span class="brand-name">Munaqasa</span>
-      <span class="brand-ar">مناقصة</span>
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><g fill="#191104"><rect x="92" y="120" width="92" height="272" rx="26"/><rect x="210" y="188" width="92" height="204" rx="26"/><rect x="328" y="256" width="92" height="136" rx="26"/></g></svg></span>
+      <span class="brand-name">مناقصة</span>
+      <span class="brand-ar">Munaqasa</span>
     </a>
     <nav>
-      <button class="btn btn-ghost" id="lang-toggle" type="button">عربي</button>
-      <a class="btn" href="post.html" data-i18n="nav.post">Post a request</a>
+      <button class="btn btn-ghost" id="lang-toggle" type="button">English</button>
+      <a class="btn" href="post.html" data-i18n="nav.post">اطرح طلبًا</a>
     </nav>
   </header>
 
   <main class="wrap">
     <section class="hero">
-      <h1 data-i18n="hero.h1">Stop buying from the first quote.</h1>
-      <p data-i18n-html="hero.p">Post what the site needs — cement, rebar, ready-mix, blocks — and let
-         suppliers bid against each other. Bids stay sealed until your closing
-         time, then open together and are compared on <b>landed cost</b>:
-         unit prices, delivery and VAT, not just the price per bag.</p>
+      <h1 data-i18n="hero.h1">خلّهم ينزلون السعر.</h1>
+      <p data-i18n-html="hero.p">انشر طلبك، أرسل رابطًا واحدًا لمورّديك، وشاهد السعر ينزل مباشرة. وعند انتهاء الوقت يفوز أرخص عرض تلقائيًا.</p>
       <div class="btn-row">
-        <a class="btn btn-lg" href="post.html" data-i18n="hero.cta1">📋 Post a request</a>
-        <a class="btn btn-lg btn-ghost" href="#board" data-i18n="hero.cta2">🔎 Bid on open requests</a>
+        <a class="btn btn-lg" href="post.html" data-i18n="hero.cta1">اطرح طلبًا</a>
+        <a class="btn btn-lg btn-ghost" href="#board" data-i18n="hero.cta2">زايد على المزادات</a>
       </div>
       <div class="how">
-        <div><b data-i18n="how1.t">1 · Post</b><span data-i18n="how1.d">List the materials, quantities and the date you need them on site.</span></div>
-        <div><b data-i18n="how2.t">2 · Sealed bids</b><span data-i18n="how2.d">Send one link to your suppliers. Nobody sees another supplier's price.</span></div>
-        <div><b data-i18n="how3.t">3 · Compare &amp; award</b><span data-i18n="how3.d">At closing time every bid opens at once, ranked on landed cost.</span></div>
+        <div><b data-i18n="how1.t">١ · انشر</b><span data-i18n="how1.d">اكتب المواد والكميات وتاريخ الحاجة إليها في الموقع.</span></div>
+        <div><b data-i18n="how2.t">٢ · يتنافسون</b><span data-i18n="how2.d">أرسل رابطًا واحدًا لمورّديك. كلٌّ يرى السعر المطلوب كسره ويقدر ينزل تحته.</span></div>
+        <div><b data-i18n="how3.t">٣ · الأقل يفوز</b><span data-i18n="how3.d">عند انتهاء الوقت تفوز أقل تكلفة واصلة تلقائيًا. أنت لا تقرر شيئًا.</span></div>
       </div>
     </section>
 
     <section id="mine" hidden>
-      <div class="sec-head"><h2 data-i18n="sec.mine">Your activity</h2><span id="mine-note"></span></div>
+      <div class="sec-head"><h2 data-i18n="sec.mine">نشاطك</h2><span id="mine-note"></span></div>
       <div class="board" id="mine-board"></div>
     </section>
 
     <section id="board">
-      <div class="sec-head"><h2 data-i18n="sec.board">Requests on the board</h2><span id="board-count"></span></div>
-      <input id="q" type="search" data-i18n-ph="search.ph" placeholder="Search by material, city or reference…" autocomplete="off" />
+      <div class="sec-head"><h2 data-i18n="sec.board">المزادات</h2><span id="board-count"></span></div>
+      <input id="q" type="search" data-i18n-ph="search.ph" placeholder="ابحث بالمادة أو المدينة أو رقم الطلب…" autocomplete="off" />
       <div class="chips" id="status-chips"></div>
-      <div class="board" id="board-list"></div>
-      <p class="empty" id="board-empty" data-i18n="board.empty" hidden>No requests match those filters.</p>
+      <div class="board" id="board-list">
+        <a class="tcard skel"><div class="sk" style="height:12px;width:40%"></div>
+          <div class="sk" style="height:18px;width:85%;margin:10px 0"></div>
+          <div class="sk" style="height:14px;width:60%"></div>
+          <div class="sk" style="height:14px;width:50%;margin-top:8px"></div></a>
+        <a class="tcard skel"><div class="sk" style="height:12px;width:40%"></div>
+          <div class="sk" style="height:18px;width:85%;margin:10px 0"></div>
+          <div class="sk" style="height:14px;width:60%"></div>
+          <div class="sk" style="height:14px;width:50%;margin-top:8px"></div></a>
+        <a class="tcard skel"><div class="sk" style="height:12px;width:40%"></div>
+          <div class="sk" style="height:18px;width:85%;margin:10px 0"></div>
+          <div class="sk" style="height:14px;width:60%"></div>
+          <div class="sk" style="height:14px;width:50%;margin-top:8px"></div></a>
+      </div>
+      <p class="empty" id="board-empty" data-i18n="board.empty" hidden>لا توجد طلبات تطابق هذه الفلاتر.</p>
     </section>
   </main>
+
+  <footer class="foot-site">
+    <b>مناقصة · Munaqasa</b>
+    <span data-i18n="foot.tag">أقل سعر يفوز — تلقائيًا.</span>
+  </footer>
 
 <script src="config.js?v=__BUILD__"></script>
 <script src="i18n.js?v=__BUILD__"></script>

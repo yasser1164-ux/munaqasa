@@ -1,80 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Post a materials request — Munaqasa</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%8F%97%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>اطرح طلب مواد — مناقصة</title>
+<meta name="description" content="اكتب المواد والكميات وابدأ المزاد — الموردون ينزلون السعر حتى ينتهي الوقت." />
+<meta name="theme-color" content="#0a0e13" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="مناقصة · Munaqasa" />
+<meta property="og:title" content="اطرح طلب مواد — مناقصة" />
+<meta property="og:description" content="اكتب المواد والكميات وابدأ المزاد — الموردون ينزلون السعر حتى ينتهي الوقت." />
+<meta property="og:url" content="https://yasser1164-ux.github.io/munaqasa/post.html" />
+<meta property="og:image" content="https://yasser1164-ux.github.io/munaqasa/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="ar_SA" />
+<meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css?v=__BUILD__" />
 </head>
 <body data-i18n-title="title.post">
   <header class="top">
     <a class="brand" href="index.html">
-      <span class="brand-mark">🏗️</span>
-      <span class="brand-name">Munaqasa</span>
-      <span class="brand-ar">مناقصة</span>
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><g fill="#191104"><rect x="92" y="120" width="92" height="272" rx="26"/><rect x="210" y="188" width="92" height="204" rx="26"/><rect x="328" y="256" width="92" height="136" rx="26"/></g></svg></span>
+      <span class="brand-name">مناقصة</span>
+      <span class="brand-ar">Munaqasa</span>
     </a>
     <nav>
-      <button class="btn btn-ghost" id="lang-toggle" type="button">عربي</button>
-      <a class="btn btn-ghost" href="index.html" data-i18n="nav.board">← Board</a>
+      <button class="btn btn-ghost" id="lang-toggle" type="button">English</button>
+      <a class="btn btn-ghost" href="index.html" data-i18n="nav.board">المنصّة</a>
     </nav>
   </header>
 
   <main class="wrap narrow">
-    <h1 style="font-size:23px;letter-spacing:-.02em;margin-bottom:6px" data-i18n="p.h1">Post a materials request</h1>
-    <p class="sub" data-i18n="p.sub">Suppliers bid line by line, sealed until your closing time.
-       The more exact the specification, the less room there is to quote you
-       something cheaper than what you asked for.</p>
+    <h1 style="font-size:23px;margin-bottom:6px" data-i18n="p.h1">اطرح طلب مواد</h1>
+    <p class="sub" data-i18n="p.sub">يقدّم الموردون أسعارهم بندًا ببند، ويستمرون بالنزول حتى ينتهي الوقت. كلما دقّت المواصفات، ضاق المجال لتسعير شيء أرخص مما طلبت.</p>
 
     <form id="post-form" autocomplete="on">
       <section class="card">
-        <h2 data-i18n="p.job">The job</h2>
+        <h2 data-i18n="p.job">العمل</h2>
         <label class="field">
-          <span data-i18n="p.title">Request title</span>
-          <input id="f-title" required maxlength="120" data-i18n-ph="p.title.ph" placeholder="e.g. Villa foundation package — 3 units" />
+          <span data-i18n="p.title">عنوان الطلب</span>
+          <input id="f-title" required maxlength="120" data-i18n-ph="p.title.ph" placeholder="مثال: حزمة قواعد فلل — 3 وحدات" />
         </label>
         <div class="grid2">
           <label class="field">
-            <span data-i18n="p.city">City</span>
+            <span data-i18n="p.city">المدينة</span>
             <select id="f-city"></select>
           </label>
           <label class="field">
-            <span data-i18n="p.needed">Needed on site by</span>
+            <span data-i18n="p.needed">مطلوب في الموقع قبل</span>
             <input id="f-needed" type="date" required />
           </label>
         </div>
         <div id="lines"></div>
-        <button type="button" class="btn btn-ghost" id="add-line" data-i18n="p.addline">+ Add material</button>
+        <button type="button" class="btn btn-ghost" id="add-line" data-i18n="p.addline">+ أضف مادة</button>
       </section>
 
       <section class="card">
-        <h2 data-i18n="p.window">How long the auction runs</h2>
-        <p data-i18n="p.window.d">Suppliers keep lowering until the time is up. Then the cheapest wins by itself.</p>
+        <h2 data-i18n="p.window">مدة المزاد</h2>
+        <p data-i18n="p.window.d">ينزل الموردون بالأسعار حتى ينتهي الوقت، ثم يفوز الأرخص تلقائيًا.</p>
         <div class="chips" style="margin-bottom:6px">
-          <button type="button" class="chip" data-close-in="24" data-i18n="p.in24">In 24 hours</button>
-          <button type="button" class="chip active" data-close-in="72" data-i18n="p.in72">In 3 days</button>
-          <button type="button" class="chip" data-close-in="168" data-i18n="p.in168">In a week</button>
+          <button type="button" class="chip" data-close-in="24" data-i18n="p.in24">خلال 24 ساعة</button>
+          <button type="button" class="chip active" data-close-in="72" data-i18n="p.in72">خلال 3 أيام</button>
+          <button type="button" class="chip" data-close-in="168" data-i18n="p.in168">خلال أسبوع</button>
         </div>
         <p class="hint" id="closes-note"></p>
         <label class="field">
-          <span data-i18n-html="p.notes">Conditions <em>— optional</em></span>
-          <textarea id="f-notes" maxlength="600" data-i18n-ph="p.notes.ph" placeholder="e.g. Mill certificate required for rebar. Staged delivery, 15,000 blocks per week."></textarea>
+          <span data-i18n-html="p.notes">الشروط <em>— اختياري</em></span>
+          <textarea id="f-notes" maxlength="600" data-i18n-ph="p.notes.ph" placeholder="مثال: شهادة مصنع للحديد. توريد على دفعات، 15,000 بلكة أسبوعيًا."></textarea>
         </label>
         <div class="grid2">
-          <label class="field"><span data-i18n="p.name">Your name</span><input id="f-name" maxlength="60" data-i18n-ph="p.name.ph" placeholder="Abu Faisal" /></label>
-          <label class="field"><span data-i18n-html="p.phone">Phone <em>— optional</em></span><input id="f-phone" type="tel" maxlength="24" placeholder="05xxxxxxxx" /></label>
+          <label class="field"><span data-i18n="p.name">اسمك</span><input id="f-name" maxlength="60" data-i18n-ph="p.name.ph" placeholder="أبو فيصل" /></label>
+          <label class="field"><span data-i18n-html="p.phone">الجوال <em>— اختياري</em></span><input id="f-phone" type="tel" maxlength="24" placeholder="05xxxxxxxx" /></label>
         </div>
       </section>
 
       <p class="err" id="post-err" hidden></p>
       <div class="btn-row">
-        <button class="btn btn-lg" type="submit" id="post-submit" data-i18n="p.submit">Start the auction &amp; get the supplier link</button>
-        <a class="btn btn-lg btn-ghost" href="index.html" data-i18n="p.cancel">Cancel</a>
+        <button class="btn btn-lg" type="submit" id="post-submit" data-i18n="p.submit">ابدأ المزاد واحصل على رابط الموردين</button>
+        <a class="btn btn-lg btn-ghost" href="index.html" data-i18n="p.cancel">إلغاء</a>
       </div>
     </form>
   </main>
+
+  <footer class="foot-site">
+    <b>مناقصة · Munaqasa</b>
+    <span data-i18n="foot.tag">أقل سعر يفوز — تلقائيًا.</span>
+  </footer>
 
 <script src="config.js?v=__BUILD__"></script>
 <script src="i18n.js?v=__BUILD__"></script>
