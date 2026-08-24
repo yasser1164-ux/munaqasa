@@ -33,7 +33,7 @@ function tenderCard(t) {
   const st = tenderStatus(t);
   const mats = [...new Set(t.items.map(i => i.material))].map(k => {
     const m = materialOf(k);
-    return `<span class="mtag">${m.emoji} ${esc(matL(m))}</span>`;
+    return `<span class="mtag">${esc(matL(m))}</span>`;
   }).join('');
 
   // A live auction advertises the price to beat; a finished one, its winner.
@@ -42,7 +42,7 @@ function tenderCard(t) {
   let bidLine;
   if (!isLive(t)) {
     bidLine = best
-      ? `<span class="bidcount">${tr('card.winner', { s: esc(supplierName(best.bid)), p: money(best.totals.total) })}</span>`
+      ? `<span class="bidcount">${tr('card.winner', { s: `<bdi>${esc(supplierName(best.bid))}</bdi>`, p: money(best.totals.total) })}</span>`
       : `<span class="bidcount">${tr('card.noBids')}</span>`;
   } else if (best) {
     bidLine = `<span class="bidcount">${tr('card.best', { bids: bidsWord(bids.length), p: money(best.totals.total) })}</span>`;
@@ -55,7 +55,7 @@ function tenderCard(t) {
 
   return `<a class="tcard" href="tender.html?id=${encodeURIComponent(t.id)}">
     <div class="ref">${esc(t.ref)} · ${esc(cityLabel(t.city))}${t.demo ? ` <span class="demo-tag">${tr('demo.tag')}</span>` : ''}</div>
-    <h3>${esc(t.title)}</h3>
+    <h3 dir="auto">${esc(t.title)}</h3>
     <div class="mats">${mats}</div>
     <div class="meta">${esc(qty)}<br>${tr('card.neededBy', { d: fmtDate(t.neededBy) })}</div>
     <div class="foot">
@@ -85,8 +85,15 @@ function renderChips() {
   ).join('');
 }
 
+// Anything already shown under "your activity" stays out of the main grid —
+// the same card twice in one scroll reads as a site padding itself out.
+function inMine(t) {
+  const me = mzMe();
+  return mzIsMine(t) || MZ_BOARD.bids.some(b => b.tenderId === t.id && b.bidderKey === me.key);
+}
+
 function renderBoard() {
-  const list = MZ_BOARD.tenders.filter(matchesFilters);
+  const list = MZ_BOARD.tenders.filter(t => matchesFilters(t) && !inMine(t));
   document.getElementById('board-list').innerHTML = list.map(tenderCard).join('');
   document.getElementById('board-empty').hidden = list.length > 0;
   document.getElementById('board-count').textContent =
@@ -132,7 +139,7 @@ function renderHeroStats() {
   el.innerHTML = `
     <div><b>${live}</b><span>${tr('stat.live')}</span></div>
     <div><b>${prices}</b><span>${tr('stat.bids')}</span></div>
-    ${bestDrop > 0.005 ? `<div><b class="drop">−${(bestDrop * 100).toFixed(1)}%</b><span>${tr('stat.drop')}</span></div>` : ''}
+    ${bestDrop > 0.005 ? `<div><b class="drop" dir="ltr">−${(bestDrop * 100).toFixed(1)}%</b><span>${tr('stat.drop')}</span></div>` : ''}
     ${allDemo ? `<p class="stats-note">${tr('stat.demo')}</p>` : ''}`;
 }
 
@@ -151,12 +158,12 @@ function renderLiveHero() {
       ${live.t.demo ? `<span class="demo-tag">${tr('demo.tag')}</span>` : ''}
       <span class="lh-count">${tr('lh.bidders', { n: live.bids.length })}</span>
     </div>
-    <div class="lh-name">${esc(live.t.title)}</div>
+    <div class="lh-name" dir="auto">${esc(live.t.title)}</div>
     <div class="lh-row">
-      <span class="lh-price">${money(best.totals.total)}</span>
+      <span class="lh-price">${moneyHtml(best.totals.total)}</span>
       <span class="lh-clock">${countdown(live.t.closesAt)}</span>
     </div>
-    <span class="lh-cta">${tr('lh.cta')} ←</span>
+    <span class="lh-cta">${tr('lh.cta')}</span>
   </a>`;
 }
 
