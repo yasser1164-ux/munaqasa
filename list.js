@@ -54,7 +54,7 @@ function tenderCard(t) {
   const mine = mzIsMine(t) ? `<span class="badge mine">${tr('badge.yours')}</span>` : '';
 
   return `<a class="tcard" href="tender.html?id=${encodeURIComponent(t.id)}">
-    <div class="ref">${esc(t.ref)} · ${esc(cityLabel(t.city))}</div>
+    <div class="ref">${esc(t.ref)} · ${esc(cityLabel(t.city))}${t.demo ? ` <span class="demo-tag">${tr('demo.tag')}</span>` : ''}</div>
     <h3>${esc(t.title)}</h3>
     <div class="mats">${mats}</div>
     <div class="meta">${esc(qty)}<br>${tr('card.neededBy', { d: fmtDate(t.neededBy) })}</div>
@@ -106,10 +106,66 @@ function renderMine() {
   document.getElementById('mine-board').innerHTML = all.map(tenderCard).join('');
 }
 
+// The landing sells with the product's own numbers — counted from the board,
+// never typed in. While the board is still the built-in sample, the strip says
+// so; invented traction is exactly what makes a new site feel fake.
+function renderHeroStats() {
+  const el = document.getElementById('hero-stats');
+  if (!el) return;
+  const live = MZ_BOARD.tenders.filter(isLive).length;
+  const prices = MZ_BOARD.bids.length;
+
+  // biggest walk-down on the board: opening total vs the price leading now
+  let bestDrop = 0;
+  for (const t of MZ_BOARD.tenders) {
+    const all = mzBidsFor(t.id);
+    if (all.length < 2) continue;
+    const first = [...all].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+    const lead = leadingBid(t, activeBidsOf(t.id));
+    if (!lead) continue;
+    const open = bidTotals(t, first).total;
+    if (open > 0) bestDrop = Math.max(bestDrop, (open - lead.totals.total) / open);
+  }
+
+  const allDemo = MZ_BOARD.tenders.length > 0 && MZ_BOARD.tenders.every(t => t.demo);
+  el.hidden = !prices;
+  el.innerHTML = `
+    <div><b>${live}</b><span>${tr('stat.live')}</span></div>
+    <div><b>${prices}</b><span>${tr('stat.bids')}</span></div>
+    ${bestDrop > 0.005 ? `<div><b class="drop">−${(bestDrop * 100).toFixed(1)}%</b><span>${tr('stat.drop')}</span></div>` : ''}
+    ${allDemo ? `<p class="stats-note">${tr('stat.demo')}</p>` : ''}`;
+}
+
+function renderLiveHero() {
+  const el = document.getElementById('live-hero');
+  if (!el) return;
+  const live = MZ_BOARD.tenders.filter(isLive)
+    .map(t => ({ t, bids: activeBidsOf(t.id) }))
+    .sort((a, b) => b.bids.length - a.bids.length)[0];
+  if (!live || !live.bids.length) { el.innerHTML = ''; return; }
+  const best = leadingBid(live.t, live.bids);
+  if (!best) { el.innerHTML = ''; return; }
+  el.innerHTML = `<a class="live-hero" href="tender.html?id=${encodeURIComponent(live.t.id)}">
+    <div class="lh-top">
+      <span class="badge live">${tr('lh.title')}</span>
+      ${live.t.demo ? `<span class="demo-tag">${tr('demo.tag')}</span>` : ''}
+      <span class="lh-count">${tr('lh.bidders', { n: live.bids.length })}</span>
+    </div>
+    <div class="lh-name">${esc(live.t.title)}</div>
+    <div class="lh-row">
+      <span class="lh-price">${money(best.totals.total)}</span>
+      <span class="lh-clock">${countdown(live.t.closesAt)}</span>
+    </div>
+    <span class="lh-cta">${tr('lh.cta')} ←</span>
+  </a>`;
+}
+
 function render() {
   renderChips();
   renderMine();
   renderBoard();
+  renderHeroStats();
+  renderLiveHero();
 }
 
 document.getElementById('status-chips').addEventListener('click', e => {
