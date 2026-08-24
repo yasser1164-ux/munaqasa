@@ -1,0 +1,15 @@
+{
+  "name": "مناقصة — مزادات مواد البناء",
+  "short_name": "مناقصة",
+  "description": "انشر طلبك ودع الموردين ينزلون السعر مباشرة. أقل سعر يفوز.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0a0e13",
+  "theme_color": "#0a0e13",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
