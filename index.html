@@ -23,6 +23,20 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css?v=__BUILD__" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebSite","name":"مناقصة · Munaqasa","alternateName":"Munaqasa",
+  "url":"https://yasser1164-ux.github.io/munaqasa/",
+  "description":"مزادات مباشرة على مواد البناء — انشر طلبك ودع الموردين ينزلون السعر. أقل سعر يفوز تلقائيًا.",
+  "inLanguage":["ar","en"]},
+ {"@type":"FAQPage","mainEntity":[
+  {"@type":"Question","name":"من يختار الفائز؟","acceptedAnswer":{"@type":"Answer","text":"لا أحد. عند انتهاء الوقت يفوز أقل سعر كامل تلقائيًا، ولا يستطيع أحد تغييره."}},
+  {"@type":"Question","name":"هل يرى الموردون أسعار بعضهم؟","acceptedAnswer":{"@type":"Answer","text":"نعم، مباشرة — كل مورد يرى السعر المطلوب كسره، فيستمر السعر بالنزول حتى ينتهي الوقت."}},
+  {"@type":"Question","name":"كم التكلفة؟","acceptedAnswer":{"@type":"Answer","text":"مجانية بالكامل: لا عمولة على الصفقات ولا رسوم."}},
+  {"@type":"Question","name":"هل أحتاج إلى تسجيل؟","acceptedAnswer":{"@type":"Answer","text":"لا. تنشر الطلب وترسل رابطًا واحدًا عبر واتساب، والموردون يزايدون من جوالاتهم."}},
+  {"@type":"Question","name":"كيف أضمن جودة المواد؟","acceptedAnswer":{"@type":"Answer","text":"تحدد المواصفات في الطلب بدقة، وكل عرض هو سعر لهذه المواصفات بالضبط. الفحص عند الاستلام يبقى كما في أي شراء."}}
+ ]}]}
+</script>
 </head>
 <body data-i18n-title="title.board">
   <header class="top">
@@ -45,6 +59,8 @@
         <a class="btn btn-lg" href="post.html" data-i18n="hero.cta1">اطرح طلبًا</a>
         <a class="btn btn-lg btn-ghost" href="#board" data-i18n="hero.cta2">زايد على المزادات</a>
       </div>
+      <div class="stats" id="hero-stats" hidden></div>
+      <div id="live-hero"></div>
       <div class="how">
         <div><b data-i18n="how1.t">١ · انشر</b><span data-i18n="how1.d">اكتب المواد والكميات وتاريخ الحاجة إليها في الموقع.</span></div>
         <div><b data-i18n="how2.t">٢ · يتنافسون</b><span data-i18n="how2.d">أرسل رابطًا واحدًا لمورّديك. كلٌّ يرى السعر المطلوب كسره ويقدر ينزل تحته.</span></div>
@@ -76,6 +92,33 @@
           <div class="sk" style="height:14px;width:50%;margin-top:8px"></div></a>
       </div>
       <p class="empty" id="board-empty" data-i18n="board.empty" hidden>لا توجد طلبات تطابق هذه الفلاتر.</p>
+    </section>
+
+    <section class="trust">
+      <div class="sec-head"><h2 data-i18n="trust.h">مصمّمة بحيث لا يحتاج أحد أن يثق بأحد</h2></div>
+      <div class="trust-grid">
+        <div><b data-i18n="trust.1.t">بدون عمولة</b><span data-i18n="trust.1.d">مجانية. المنصة لا تأخذ شيئًا من الصفقة.</span></div>
+        <div><b data-i18n="trust.2.t">بدون تسجيل</b><span data-i18n="trust.2.d">انشر وزايد من الجوال مباشرة. لا حسابات ولا كلمات مرور.</span></div>
+        <div><b data-i18n="trust.3.t">كل الأسعار معلنة</b><span data-i18n="trust.3.d">كل المتنافسين يرون الأرقام نفسها في اللحظة نفسها. لا صفقات جانبية.</span></div>
+        <div><b data-i18n="trust.4.t">الفائز يُحسب لا يُختار</b><span data-i18n="trust.4.d">أقل سعر كامل عند انتهاء الوقت. ولا يستطيع أحد تغييره.</span></div>
+      </div>
+    </section>
+
+    <section class="band">
+      <div>
+        <h2 data-i18n="sup.h">مورّد مواد بناء؟</h2>
+        <p data-i18n="sup.d">الطلبات تصلك جاهزة — كميات ومواصفات وموقع تسليم. افتح مزادًا مباشرًا، شاهد السعر المطلوب كسره، وخذ الصفقة بأقل سعر رابح.</p>
+      </div>
+      <a class="btn btn-lg" href="#board" data-i18n="sup.cta">تصفّح المزادات المباشرة</a>
+    </section>
+
+    <section class="faq">
+      <div class="sec-head"><h2 data-i18n="faq.h">الأسئلة التي تُسأل فعلًا</h2></div>
+      <details><summary data-i18n="faq.1.q">من يختار الفائز؟</summary><p data-i18n="faq.1.a">لا أحد. عند انتهاء الوقت يفوز أقل سعر كامل تلقائيًا — لا يستطيع المشتري اختيار غيره، وهذا بالضبط ما يجعل الموردين يتنافسون بجدية.</p></details>
+      <details><summary data-i18n="faq.2.q">هل يرى الموردون أسعار بعضهم؟</summary><p data-i18n="faq.2.a">نعم، مباشرة. هذه هي الفكرة كلها: كل مورد يرى السعر المطلوب كسره، فيستمر السعر بالنزول حتى ينتهي الوقت.</p></details>
+      <details><summary data-i18n="faq.3.q">كم التكلفة؟</summary><p data-i18n="faq.3.a">لا شيء. لا عمولة على الصفقات، ولا رسوم، ولا باقات مدفوعة.</p></details>
+      <details><summary data-i18n="faq.4.q">هل أحتاج إلى تسجيل؟</summary><p data-i18n="faq.4.a">لا. تنشر الطلب وترسل رابطًا واحدًا عبر واتساب، والموردون يزايدون من جوالاتهم. فقط احتفظ برابطك — فهو طريقك للعودة إلى مزادك.</p></details>
+      <details><summary data-i18n="faq.5.q">كيف أضمن جودة المواد؟</summary><p data-i18n="faq.5.a">أنت تحدد المواصفات في الطلب — الدرجة والمقاس والمعيار والشهادات — وكل عرض هو سعر لهذه المواصفات بالضبط. المنصة تحسم السعر؛ والفحص عند الاستلام يبقى كما في أي شراء.</p></details>
     </section>
   </main>
 

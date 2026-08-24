@@ -110,6 +110,8 @@ function renderItems() {
 
 // ---- the live ticker --------------------------------------------------------
 
+let LAST_TICKER = null;   // last shown price, to flash when it drops live
+
 function tickerHtml(bids) {
   const best = leadingBid(T, bids);
   if (!best) {
@@ -119,7 +121,9 @@ function tickerHtml(bids) {
     </div>`;
   }
   const mine = best.bid.bidderKey === mzMe().key;
-  return `<div class="ticker">
+  const dropped = LAST_TICKER != null && best.totals.total < LAST_TICKER;
+  LAST_TICKER = best.totals.total;
+  return `<div class="ticker${dropped ? ' just-dropped' : ''}">
     <div class="ticker-label">${tr('live.lowest')} <span class="pulse">● ${tr('live.updating')}</span></div>
     <div class="ticker-price">${money(best.totals.total)}</div>
     <div class="ticker-who">${tr('live.from', { s: esc(supplierName(best.bid)) })}${mine ? ` — ${tr('live.youLead')}` : ''}</div>
@@ -427,6 +431,11 @@ function renderAction() {
     historyHtml(all);
 }
 
+function renderDemoNote() {
+  if (!T || !T.demo) return '';
+  return `<p class="hint demo-note"><span class="demo-tag">${tr('demo.tag')}</span> ${tr('demo.note')}</p>`;
+}
+
 function renderPosted() {
   if (!JUST_POSTED || !mzIsMine(T)) return;
   document.getElementById('posted-panel').innerHTML =
@@ -444,6 +453,7 @@ function render() {
   document.title = `${T.ref} — ${T.title} · ${mzIsAr() ? 'مناقصة' : 'Munaqasa'}`;
   renderPosted();
   renderHead();
+  document.getElementById('head').insertAdjacentHTML('afterbegin', renderDemoNote());
   renderItems();
   renderAction();
 }

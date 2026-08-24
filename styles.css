@@ -306,3 +306,57 @@ tr.partial td{opacity:.6}
   .bidline input{text-align:start}
   .foot-site{padding:22px 14px 32px}
 }
+
+/* ---- landing: stats, spotlight, trust, band, FAQ ---------------------------- */
+.stats{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end;margin-top:22px;
+  padding-top:20px;border-top:1px solid var(--line)}
+.stats div b{display:block;font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.stats div b.drop{color:var(--green)}
+.stats div span{color:var(--faint);font-size:12.5px}
+.stats-note{flex-basis:100%;color:var(--faint);font-size:12px;margin-top:2px}
+
+.live-hero{display:block;margin-top:18px;background:rgba(10,14,19,.55);
+  border:1px solid var(--green-line);border-radius:14px;padding:16px 18px;
+  text-decoration:none;color:var(--text);transition:border-color .15s,transform .15s}
+.live-hero:hover{transform:translateY(-2px);border-color:var(--green)}
+.lh-top{display:flex;align-items:center;gap:10px}
+.lh-count{margin-inline-start:auto;color:var(--muted);font-size:12.5px;font-weight:600}
+.lh-name{font-size:15px;font-weight:700;margin:9px 0 6px}
+.lh-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.lh-price{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:embed}
+.lh-clock{color:var(--accent);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.lh-cta{display:inline-block;margin-top:10px;color:var(--green);font-size:13px;font-weight:700}
+
+.demo-tag{display:inline-block;font-size:10.5px;font-weight:700;color:var(--blue);
+  background:rgba(109,179,255,.10);border:1px solid rgba(109,179,255,.3);
+  border-radius:6px;padding:1px 7px;vertical-align:1px}
+.demo-note{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:10px 14px;margin:0 0 14px}
+
+.trust{margin-top:34px}
+.trust-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.trust-grid div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 17px}
+.trust-grid b{display:block;font-size:14.5px;font-weight:700;margin-bottom:5px;color:var(--accent)}
+.trust-grid span{color:var(--muted);font-size:13px;line-height:1.6}
+
+.band{margin-top:34px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+  background:linear-gradient(135deg,var(--surface-2),var(--surface));
+  border:1px solid var(--line);border-radius:var(--radius-lg);padding:26px 28px}
+.band div{flex:1 1 320px}
+.band h2{font-size:19px;font-weight:700;margin-bottom:6px}
+.band p{color:var(--muted);font-size:14px;line-height:1.65;max-width:56ch}
+
+.faq{margin-top:34px}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  margin-bottom:8px;overflow:hidden}
+.faq summary{cursor:pointer;list-style:none;padding:15px 18px;font-size:14.5px;font-weight:700;
+  display:flex;align-items:center;gap:10px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';margin-inline-start:auto;color:var(--faint);font-size:18px;
+  font-weight:400;transition:transform .15s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq details p{padding:0 18px 16px;color:var(--muted);font-size:13.5px;line-height:1.7;max-width:66ch}
+
+/* the moment a lower price lands while you watch */
+.ticker.just-dropped{animation:pricedrop 1.2s ease}
+@keyframes pricedrop{0%{box-shadow:0 0 0 0 rgba(61,220,132,.45)}100%{box-shadow:0 0 0 26px rgba(61,220,132,0)}}
