@@ -6,6 +6,7 @@
    there. Numbers are always tabular. */
 
 :root{
+  color-scheme:dark;
   --bg:#0a0e13;
   --surface:#10151d;
   --surface-2:#161d27;
@@ -14,7 +15,7 @@
   --line-strong:rgba(148,163,184,.22);
   --text:#eef2f7;
   --muted:#94a0b4;
-  --faint:#5f6b7f;
+  --faint:#808c9f;
   --accent:#ffb224;
   --accent-soft:rgba(255,178,36,.12);
   --accent-line:rgba(255,178,36,.35);
@@ -31,7 +32,7 @@
   --ring:0 0 0 2px var(--bg),0 0 0 4px var(--accent);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
 body{
   font-family:'IBM Plex Sans Arabic','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
   background:var(--bg);color:var(--text);line-height:1.5;
@@ -75,7 +76,7 @@ input,select,textarea,button{font-family:inherit;font-size:inherit;color:inherit
 }
 .btn:hover{filter:brightness(1.06)}
 .btn:active{transform:translateY(1px)}
-.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:disabled{opacity:1;background:var(--surface-3);color:var(--faint);box-shadow:none;cursor:not-allowed}
 .btn-ghost{background:var(--surface-2);border-color:var(--line-strong);color:var(--text);box-shadow:none}
 .btn-ghost:hover{filter:none;background:var(--surface-3)}
 .btn-lg{padding:14px 24px;font-size:15px;border-radius:14px}
@@ -92,6 +93,12 @@ input,select,textarea,button{font-family:inherit;font-size:inherit;color:inherit
     var(--surface);
   background-size:auto,44px 44px,44px 44px,auto;
 }
+.hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,1fr);gap:6px 34px}
+.hero > *{grid-column:1}
+.hero #live-hero{grid-column:2;grid-row:1/5;align-self:center}
+.hero #live-hero:empty{display:none}
+.hero:has(#live-hero:empty){grid-template-columns:1fr}
+.hero .how{grid-column:1/-1}
 .hero h1{font-size:clamp(26px,4.4vw,38px);line-height:1.18;font-weight:700;margin-bottom:10px;max-width:22ch}
 .hero p{color:var(--muted);font-size:15.5px;line-height:1.65;max-width:52ch}
 .hero p b{color:var(--text)}
@@ -103,14 +110,14 @@ input,select,textarea,button{font-family:inherit;font-size:inherit;color:inherit
 
 /* ---- section heads + filters -------------------------------------------------- */
 .sec-head{display:flex;align-items:baseline;gap:10px;margin:30px 0 14px}
-.sec-head h2{font-size:19px;font-weight:700}
+.sec-head h2{font-size:22px;font-weight:700}
 .sec-head span{color:var(--faint);font-size:13px;font-variant-numeric:tabular-nums}
 input[type=search]{width:100%;padding:12px 16px;border-radius:12px;border:1px solid var(--line);
   background:var(--surface);font-size:14.5px}
 input[type=search]::placeholder{color:var(--faint)}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:12px 2px 4px;scrollbar-width:none;margin-bottom:12px}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:0 0 auto;padding:7px 15px;border-radius:999px;border:1px solid var(--line);
+.chip{flex:0 0 auto;padding:10px 16px;min-height:40px;border-radius:999px;border:1px solid var(--line);
   background:var(--surface);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;
   white-space:nowrap;transition:border-color .15s,color .15s,background .15s}
 .chip:hover{border-color:var(--line-strong);color:var(--text)}
@@ -123,7 +130,7 @@ input[type=search]::placeholder{color:var(--faint)}
   color:var(--text);text-decoration:none;box-shadow:var(--shadow-sm);
   transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
 .tcard:hover{transform:translateY(-2px);border-color:var(--line-strong);box-shadow:var(--shadow)}
-.tcard .ref{color:var(--faint);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.tcard .ref{color:var(--faint);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
 .tcard h3{font-size:15.5px;font-weight:700;line-height:1.4;margin:6px 0 10px}
 .tcard .mats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .mtag{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);
@@ -165,21 +172,25 @@ input[type=search]::placeholder{color:var(--faint)}
 .field{display:block;margin-bottom:13px}
 .field > span{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px}
 .field > span em{font-style:normal;color:var(--faint);font-weight:500}
-input,select,textarea{width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--line);
+input,select,textarea{width:100%;padding:11px 13px;border-radius:12px;border:1px solid rgba(148,163,184,.42);
   background:var(--surface-2);font-size:14.5px;transition:border-color .15s}
 input:hover,select:hover,textarea:hover{border-color:var(--line-strong)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 input::placeholder,textarea::placeholder{color:var(--faint)}
 textarea{min-height:84px;resize:vertical;line-height:1.6}
-input[type=number],input[type=tel]{direction:ltr;text-align:end;font-variant-numeric:tabular-nums}
+input[type=number],input[type=tel]{direction:ltr;text-align:end;font-variant-numeric:tabular-nums;
+  appearance:textfield;-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .hint{color:var(--faint);font-size:12.5px;line-height:1.6;margin-top:6px}
 .err{color:var(--red);font-size:13px;font-weight:600;margin-top:10px}
+
+#post-form .chips{flex-wrap:wrap;overflow-x:visible}
 
 /* line items on the post form */
 .line{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;
   padding:14px;margin-bottom:10px;position:relative}
 .line input,.line select{background:var(--surface)}
-.line .rm{position:absolute;top:10px;inset-inline-end:10px;width:26px;height:26px;display:grid;
+.line .rm{position:absolute;top:6px;inset-inline-end:6px;width:40px;height:40px;display:grid;
   place-items:center;background:none;border:none;border-radius:8px;color:var(--faint);
   font-size:14px;cursor:pointer}
 .line .rm:hover{color:var(--red);background:var(--surface)}
@@ -191,13 +202,13 @@ input[type=number],input[type=tel]{direction:ltr;text-align:end;font-variant-num
 .sub{color:var(--faint);font-size:13.5px;line-height:1.6;margin-bottom:16px}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
 .fact{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 14px}
-.fact b{display:block;font-size:11px;color:var(--faint);font-weight:600;margin-bottom:4px}
+.fact b{display:block;font-size:12px;color:var(--faint);font-weight:600;margin-bottom:4px}
 .fact span{font-size:14.5px;font-weight:700;font-variant-numeric:tabular-nums}
 
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th,td{text-align:start;padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
 tbody tr:last-child td{border-bottom:none}
-th{color:var(--faint);font-size:11px;font-weight:600;white-space:nowrap}
+th{color:var(--faint);font-size:12px;font-weight:600;white-space:nowrap}
 td.num,th.num{text-align:end;white-space:nowrap;font-variant-numeric:tabular-nums}
 .scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -22px;padding:0 22px}
 .spec{color:var(--muted);font-size:12.5px;line-height:1.5;margin-top:2px}
@@ -209,14 +220,18 @@ td.num,th.num{text-align:end;white-space:nowrap;font-variant-numeric:tabular-num
   border-radius:var(--radius-lg);padding:26px 22px;text-align:center;margin-bottom:14px;
   background:radial-gradient(420px 200px at 50% -30%,rgba(61,220,132,.14),transparent 70%),var(--surface)}
 .ticker.empty{background:var(--surface);border-style:dashed;border-color:var(--line-strong)}
+.ticker.won{border-color:var(--accent-line);
+  background:radial-gradient(420px 200px at 50% -30%,rgba(255,178,36,.16),transparent 70%),var(--surface)}
+.ticker-price .cur,.lh-price .cur{font-size:.45em;font-weight:600;color:var(--muted)}
 .ticker-label{font-size:12px;font-weight:700;color:var(--muted)}
 .ticker-price{font-size:clamp(36px,7vw,52px);font-weight:700;line-height:1.15;margin:8px 0 2px;
-  font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:embed}
+  font-variant-numeric:tabular-nums}
 .ticker-who{font-size:14px;font-weight:600;color:var(--muted)}
 .ticker-who b{color:var(--text)}
 .ticker-clock{margin-top:12px;display:inline-block;padding:5px 14px;border-radius:999px;
-  background:var(--accent-soft);border:1px solid var(--accent-line);font-size:13px;
-  font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+  background:var(--surface-2);border:1px solid var(--line-strong);font-size:13px;
+  font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.ticker-clock.closing{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
 .ticker p{color:var(--muted);font-size:13.5px;line-height:1.6;max-width:48ch;margin:8px auto 0}
 .pulse{color:var(--green);font-weight:600;animation:blink 2s ease-in-out infinite}
 .ticker-label .pulse{font-size:11px}
@@ -239,7 +254,8 @@ td.num,th.num{text-align:end;white-space:nowrap;font-variant-numeric:tabular-num
 .rank.first{background:var(--accent);border-color:transparent;color:var(--accent-ink)}
 tr.winner td{background:var(--accent-soft)}
 tr.winner td:first-child{border-inline-start:3px solid var(--accent)}
-tr.partial td{opacity:.6}
+tr.partial td{color:var(--muted)}
+tr.winner .who span{color:var(--muted)}
 .best{color:var(--green);font-weight:700}
 
 /* price-drop history: a quiet timeline */
@@ -250,7 +266,7 @@ tr.partial td{opacity:.6}
 .history li::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--surface-3);
   border:2px solid var(--line-strong);align-self:center;flex:0 0 auto}
 .history li:first-child::before{background:var(--green);border-color:var(--green)}
-.h-price{font-weight:700;font-variant-numeric:tabular-nums;min-width:104px;direction:ltr;unicode-bidi:embed}
+.h-price{font-weight:700;font-variant-numeric:tabular-nums;min-width:104px}
 .history li:first-child .h-price{color:var(--green)}
 .h-who{flex:1;color:var(--muted)}
 .h-when{color:var(--faint);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -270,7 +286,7 @@ tr.partial td{opacity:.6}
 .bidline:last-of-type{border-bottom:none}
 .bidline .what b{font-size:14px}
 .linesum{color:var(--faint);font-size:12px;text-align:end;margin-top:5px;min-height:16px;
-  font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:embed}
+  font-variant-numeric:tabular-nums}
 [dir=rtl] .linesum{text-align:start}
 .totals{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;
   padding:16px;margin-top:16px}
@@ -292,6 +308,15 @@ tr.partial td{opacity:.6}
 .swipe{display:none}
 @media (max-width:760px){
   .swipe{display:block;margin:0 0 8px}
+  .hero{display:block}
+  input,select,textarea{font-size:16px}
+  input[type=search]{font-size:16px}
+  .top nav .btn{min-height:40px}
+  .btn-row{flex-direction:column;align-items:stretch}
+  .btn-row .btn-lg{width:100%}
+  .btn-row .btn-ghost{background:transparent;border-color:transparent}
+  .cmp th:nth-child(4),.cmp td:nth-child(4),
+  .cmp th:nth-child(5),.cmp td:nth-child(5){display:none}
   .wrap{padding:18px 14px 36px}
   .top{padding:10px 14px}
   .top nav .btn{padding:8px 13px;font-size:13px}
@@ -323,12 +348,12 @@ tr.partial td{opacity:.6}
 .lh-count{margin-inline-start:auto;color:var(--muted);font-size:12.5px;font-weight:600}
 .lh-name{font-size:15px;font-weight:700;margin:9px 0 6px}
 .lh-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-.lh-price{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:embed}
+.lh-price{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
 .lh-clock{color:var(--accent);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
 .lh-cta{display:inline-block;margin-top:10px;color:var(--green);font-size:13px;font-weight:700}
 
-.demo-tag{display:inline-block;font-size:10.5px;font-weight:700;color:var(--blue);
-  background:rgba(109,179,255,.10);border:1px solid rgba(109,179,255,.3);
+.demo-tag{display:inline-block;font-size:10.5px;font-weight:700;color:var(--muted);
+  background:var(--surface-2);border:1px solid var(--line-strong);
   border-radius:6px;padding:1px 7px;vertical-align:1px}
 .demo-note{background:var(--surface);border:1px solid var(--line);border-radius:12px;
   padding:10px 14px;margin:0 0 14px}

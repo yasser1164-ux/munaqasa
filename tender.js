@@ -69,18 +69,17 @@ function renderHead() {
 
   document.getElementById('head').innerHTML = `
     <div class="head-row">
-      <h1>${esc(T.title)}</h1>
+      <h1 dir="auto">${esc(T.title)}</h1>
       <span class="badge ${st.kind}">${esc(st.label)}</span>
       ${mzIsMine(T) ? `<span class="badge mine">${tr('badge.yourReq')}</span>` : ''}
     </div>
-    <p class="sub">${esc(T.ref)} · ${esc(cityLabel(T.city))}${(T.buyerCompany || T.buyerName) ? ` · ${tr('postedBy', { c: esc(T.buyerCompany || T.buyerName) })}` : ''}</p>
+    <p class="sub">${esc(T.ref)} · ${esc(cityLabel(T.city))}${(T.buyerCompany || T.buyerName) ? ` · ${tr('postedBy', { c: `<bdi>${esc(T.buyerCompany || T.buyerName)}</bdi>` })}` : ''}</p>
     <div class="facts">
       <div class="fact"><b>${tr('fact.needed')}</b><span>${fmtDate(T.neededBy)}</span></div>
       <div class="fact"><b>${tr('fact.closes')}</b><span>${fmtDateTime(T.closesAt)}</span></div>
       <div class="fact"><b>${winner ? tr('fact.won') : tr('fact.bids')}</b><span>${bidFact}</span></div>
       ${T.site ? `<div class="fact"><b>${tr('fact.site')}</b><span style="font-size:13px;font-weight:600">${esc(T.site)}</span></div>` : ''}
-    </div>
-    ${T.notes ? `<div class="card"><h2>${tr('cond.h')}</h2><p style="margin:0">${esc(T.notes)}</p></div>` : ''}`;
+    </div>`;
 }
 
 function renderItems() {
@@ -89,7 +88,7 @@ function renderItems() {
     const mk = marketMedian(i.material, i.unit, MZ_BOARD.tenders, MZ_BOARD.bids);
     return `<tr>
       <td>
-        <b>${m.emoji} ${esc(matL(m))}</b> <span style="color:var(--muted)">${esc(matL2(m))}</span>
+        <b>${esc(matL(m))}</b> <span style="color:var(--muted)">${esc(matL2(m))}</span>
         ${i.spec ? `<div class="spec">${esc(i.spec)}</div>` : ''}
         ${mk ? `<div class="market">${tr('market', { p: money(mk.median), u: esc(unitShort(i.unit)), bids: bidsWord(mk.samples) })}</div>` : ''}
       </td>
@@ -98,7 +97,9 @@ function renderItems() {
     </tr>`;
   }).join('');
 
-  document.getElementById('items').innerHTML = `<div class="card">
+  document.getElementById('items').innerHTML = `
+  ${T.notes ? `<div class="card"><h2>${tr('cond.h')}</h2><p style="margin:0">${esc(T.notes)}</p></div>` : ''}
+  <div class="card">
     <h2>${tr('buy.h')}</h2>
     <p>${tr('buy.d', { lines: linesWord(T.items.length) })}</p>
     <div class="scroll-x"><table>
@@ -125,9 +126,9 @@ function tickerHtml(bids) {
   LAST_TICKER = best.totals.total;
   return `<div class="ticker${dropped ? ' just-dropped' : ''}">
     <div class="ticker-label">${tr('live.lowest')} <span class="pulse">● ${tr('live.updating')}</span></div>
-    <div class="ticker-price">${money(best.totals.total)}</div>
-    <div class="ticker-who">${tr('live.from', { s: esc(supplierName(best.bid)) })}${mine ? ` — ${tr('live.youLead')}` : ''}</div>
-    <div class="ticker-clock">${countdown(T.closesAt)}</div>
+    <div class="ticker-price">${moneyHtml(best.totals.total)}</div>
+    <div class="ticker-who">${tr('live.from', { s: `<bdi>${esc(supplierName(best.bid))}</bdi>` })}${mine ? ` — ${tr('live.youLead')}` : ''}</div>
+    <div class="ticker-clock ${tenderStatus(T).kind}">${countdown(T.closesAt)}</div>
   </div>`;
 }
 
@@ -141,25 +142,27 @@ function standingsHtml(bids, opts = {}) {
     return `<tr class="${first ? 'winner' : ''} ${r.coverage.complete ? '' : 'partial'}">
       <td><span class="rank ${first ? 'first' : ''}">${n + 1}</span></td>
       <td class="who">
-        <b>${esc(supplierName(b))}${first && opts.final ? ' 🏆' : ''}${isMine ? ` <span class="you">${tr('live.myPrice')}</span>` : ''}</b>
+        <b><bdi>${esc(supplierName(b))}</bdi>${isMine ? ` <span class="you">${tr('live.myPrice')}</span>` : ''}</b>
         <span>${r.coverage.complete ? tr('cmp.allLines') : tr('cmp.someLines', { a: r.coverage.priced, b: r.coverage.total })}${b.notes ? ` · ${tr('cmp.seeNote')}` : ''}</span>
       </td>
+      <td class="num">${r.coverage.complete
+        ? `<b>${money(r.totals.total)}</b>`
+        : `${money(r.totals.total)}<div class="spec">${tr('cmp.partialTotal')}</div>`}</td>
       <td class="num">${tr('d.short', { n: esc(r.lead) })}</td>
       <td>${esc(termsLabel(b.terms))}</td>
-      <td class="num"><b>${money(r.totals.total)}</b></td>
     </tr>`;
   }).join('');
 
   const notes = ranked.filter(r => r.bid.notes).map(r =>
-    `<p class="hint"><b>${esc(supplierName(r.bid))}:</b> ${esc(r.bid.notes)}</p>`).join('');
+    `<p class="hint"><b><bdi>${esc(supplierName(r.bid))}</bdi>:</b> ${esc(r.bid.notes)}</p>`).join('');
 
   return `<div class="card">
     <h2>${opts.final ? tr('cmp.h') : tr('live.standings')}</h2>
     <p>${opts.final ? tr('cmp.d', { p: Math.round(VAT_RATE * 100) }) : tr('live.rule')}</p>
     <div class="scroll-x"><table class="cmp">
       <thead><tr>
-        <th>#</th><th>${tr('th.supplier')}</th><th class="num">${tr('th.lead')}</th><th>${tr('th.terms')}</th>
-        <th class="num">${tr('th.landed')}</th>
+        <th>#</th><th>${tr('th.supplier')}</th><th class="num">${tr('th.landed')}</th>
+        <th class="num">${tr('th.lead')}</th><th>${tr('th.terms')}</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
@@ -197,14 +200,14 @@ function bidFormHtml(existing, bids) {
   const iLead = best && best.bid.bidderKey === me.key;
   const target = !best ? tr('live.first')
     : iLead ? tr('live.youLead')
-    : tr('live.beat', { p: money(best.totals.total) });
+    : tr('live.beat', { p: money(best.totals.total) });   // target line
 
   const lines = T.items.map((i, n) => {
     const m = materialOf(i.material);
     const val = existing && existing.lines[n] != null ? existing.lines[n] : '';
     return `<div class="bidline">
       <div class="what">
-        <b>${m.emoji} ${esc(matL(m))}</b>
+        <b>${esc(matL(m))}</b>
         <div class="spec">${qtyText(i.qty)} ${esc(unitShort(i.unit))}${i.spec ? ` · ${esc(i.spec)}` : ''}</div>
       </div>
       <div>
@@ -350,8 +353,8 @@ function splitHtml(bids) {
   const picks = s.picks.map(p => {
     const m = materialOf(p.item.material);
     return `<tr>
-      <td><b>${m.emoji} ${esc(matL(m))}</b><div class="spec">${qtyText(p.item.qty)} ${esc(unitShort(p.item.unit))}</div></td>
-      <td>${esc(supplierName(p.bid))}</td>
+      <td><b>${esc(matL(m))}</b><div class="spec">${qtyText(p.item.qty)} ${esc(unitShort(p.item.unit))}</div></td>
+      <td><bdi>${esc(supplierName(p.bid))}</bdi></td>
       <td class="num">${money(p.unitPrice)}</td>
       <td class="num">${money(p.lineTotal)}</td>
     </tr>`;
@@ -387,11 +390,13 @@ function renderAction() {
   const bids = activeBids(T);
   const mine = mzIsMine(T);
 
+  const slot = document.getElementById('ticker-slot');
+
   if (isLive(T)) {
     const my = mzMyBid(T.id);
     const showForm = !mine && (BID_FORM_OPEN || !my);
+    slot.innerHTML = tickerHtml(bids);
     el.innerHTML =
-      tickerHtml(bids) +
       (!mine && my && !BID_FORM_OPEN ? myStandingHtml(my, bids) : '') +
       (showForm ? bidFormHtml(my, bids) : '') +
       (bids.length ? standingsHtml(bids) : '') +
@@ -404,7 +409,9 @@ function renderAction() {
     return;
   }
 
-  // The clock stopped: the lowest complete price won, on its own.
+  // The clock stopped: the lowest complete price won, on its own. The winner
+  // gets the same hero treatment the live price had — it is the same number,
+  // one tick later.
   const winner = leadingBid(T, bids);
   const iWon = winner && winner.bid.bidderKey === mzMe().key;
   let banner;
@@ -412,20 +419,19 @@ function renderAction() {
     banner = `<div class="empty">${tr('win.none')}</div>`;
   } else {
     const wa = winner.bid.supplierPhone
-      ? ` <a class="btn" style="margin:0 8px" href="https://wa.me/${esc(winner.bid.supplierPhone.replace(/[^0-9]/g, ''))}" target="_blank" rel="noopener">${tr('aw.msg')}</a>`
+      ? `<div class="btn-row" style="justify-content:center"><a class="btn" href="https://wa.me/${esc(winner.bid.supplierPhone.replace(/[^0-9]/g, ''))}" target="_blank" rel="noopener">${tr('aw.msg')}</a></div>`
       : '';
-    banner = `<div class="awarded-note">
-      ${iWon ? `<b>${tr('win.youWon')}</b><br>` : ''}
-      ${tr('win.banner', {
-        s: esc(supplierName(winner.bid)), p: money(winner.totals.total),
-        d: dayWord(Number(winner.bid.leadDays) || 1), t: esc(termsLabel(winner.bid.terms))
-      })}
-      <div class="hint" style="margin-top:6px">${tr('win.auto')}</div>${wa}
+    banner = `<div class="ticker won">
+      ${iWon ? `<div class="ticker-label" style="color:var(--accent)">${tr('win.youWon')}</div>` : ''}
+      <div class="ticker-label">${tr('win.label')}</div>
+      <div class="ticker-price">${moneyHtml(winner.totals.total)}</div>
+      <div class="ticker-who"><b><bdi>${esc(supplierName(winner.bid))}</bdi></b> · ${tr('win.detail', { d: dayWord(Number(winner.bid.leadDays) || 1), t: esc(termsLabel(winner.bid.terms)) })}</div>
+      ${wa}
     </div>`;
   }
 
+  slot.innerHTML = banner;
   el.innerHTML =
-    banner +
     (bids.length ? standingsHtml(bids, { final: true }) : '') +
     (bids.length > 1 ? splitHtml(bids) : '') +
     historyHtml(all);

@@ -12,9 +12,13 @@ const errEl = document.getElementById('post-err');
 
 // Cities the parent map covers first, then the rest of the country. The stored
 // value is the English name; the label shows both.
-document.getElementById('f-city').innerHTML =
-  [...CITIES, 'Other'].map(c =>
-    `<option value="${esc(c)}">${esc(CITY_AR[c] || c)} · ${esc(c)}</option>`).join('');
+function cityOptions(selected) {
+  return [...CITIES, 'Other'].map(c => {
+    const [a, b] = mzIsAr() ? [CITY_AR[c] || c, c] : [c, CITY_AR[c] || c];
+    return `<option value="${esc(c)}" ${c === selected ? 'selected' : ''}>${esc(a)} · ${esc(b)}</option>`;
+  }).join('');
+}
+document.getElementById('f-city').innerHTML = cityOptions();
 
 // A material's own units come first — nobody buys cement by the square metre —
 // but the full list stays available for the odd job that needs it.
@@ -22,9 +26,17 @@ document.getElementById('f-city').innerHTML =
 // less thing to think about.
 function unitOptions(materialKey, selected) {
   const m = materialOf(materialKey);
-  return m.units.map(u =>
-    `<option value="${u}" ${u === selected ? 'selected' : ''}>${esc(UNITS[u].ar)} · ${esc(UNITS[u].en)}</option>`
-  ).join('');
+  return m.units.map(u => {
+    const [a, b] = mzIsAr() ? [UNITS[u].ar, UNITS[u].en] : [UNITS[u].en, UNITS[u].ar];
+    return `<option value="${u}" ${u === selected ? 'selected' : ''}>${esc(a)} · ${esc(b)}</option>`;
+  }).join('');
+}
+
+function matOptions(selected) {
+  return MATERIALS.map(m => {
+    const [a, b] = mzIsAr() ? [m.ar, m.en] : [m.en, m.ar];
+    return `<option value="${m.key}" ${m.key === selected ? 'selected' : ''}>${m.emoji} ${esc(a)} · ${esc(b)}</option>`;
+  }).join('');
 }
 
 function lineHtml(i, line = {}) {
@@ -33,9 +45,7 @@ function lineHtml(i, line = {}) {
     ${i > 0 ? '<button type="button" class="rm" title="✕">✕</button>' : ''}
     <label class="field">
       <span data-i18n="p.mat">${tr('p.mat')}</span>
-      <select class="l-mat">
-        ${MATERIALS.map(m => `<option value="${m.key}" ${m.key === mat ? 'selected' : ''}>${m.emoji} ${esc(m.ar)} · ${esc(m.en)}</option>`).join('')}
-      </select>
+      <select class="l-mat">${matOptions(mat)}</select>
     </label>
     <label class="field">
       <span data-i18n-html="p.spec">${tr('p.spec')}</span>
@@ -104,7 +114,20 @@ document.querySelectorAll('[data-close-in]').forEach(b =>
   }));
 
 updateClosesNote();
-window.onLangChange = updateClosesNote;
+
+// The toggle re-labels the selects in the new language, keeping every choice.
+window.onLangChange = () => {
+  updateClosesNote();
+  const city = document.getElementById('f-city');
+  city.innerHTML = cityOptions(city.value);
+  document.querySelectorAll('.line').forEach(line => {
+    const mat = line.querySelector('.l-mat');
+    const unit = line.querySelector('.l-unit');
+    const mv = mat.value, uv = unit.value;
+    mat.innerHTML = matOptions(mv);
+    unit.innerHTML = unitOptions(mv, uv);
+  });
+};
 
 const needed = new Date();
 needed.setDate(needed.getDate() + 10);

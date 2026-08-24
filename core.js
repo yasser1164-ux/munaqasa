@@ -106,6 +106,15 @@ function money(n) {
   return `${num} ${mzIsAr() ? 'ر.س' : CURRENCY}`;
 }
 
+// For display-size prices: the figure keeps its size, the currency drops to a
+// caption — 60,433 is the message, ر.س is the unit.
+function moneyHtml(n) {
+  const m = money(n);
+  const i = m.lastIndexOf(' ');
+  if (i < 0) return m;
+  return `${m.slice(0, i)} <span class="cur">${m.slice(i + 1)}</span>`;
+}
+
 function qtyText(n) {
   return Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 }

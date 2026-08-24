@@ -26,7 +26,7 @@ function mzIsAr() { return MZ_LANG === 'ar'; }
 const MZ_STR = {
   // ---- shared chrome --------------------------------------------------------
   'nav.post':      { en: 'Post a request', ar: 'اطرح طلبًا' },
-  'nav.board':     { en: '← Board', ar: 'المنصّة' },
+  'nav.board':     { en: '← Board', ar: 'المنصّة →' },
   'title.board':   { en: 'Munaqasa — Bid for construction materials', ar: 'مناقصة — منافسة على أسعار مواد البناء' },
   'title.post':    { en: 'Post a materials request — Munaqasa', ar: 'اطرح طلب مواد — مناقصة' },
 
@@ -209,6 +209,7 @@ const MZ_STR = {
   'cmp.seeNote':   { en: 'see note', ar: 'انظر الملاحظة' },
   'cmp.cheapest':  { en: 'cheapest', ar: 'الأرخص' },
   'cmp.notRanked': { en: 'not ranked', ar: 'غير مصنّف' },
+  'cmp.partialTotal': { en: 'partial — not full scope', ar: 'جزئي — لا يغطي الطلب' },
   'd.short': { en: '{n} d', ar: '{n} ي' },
 
   'lbl.h': { en: 'Line by line', ar: 'بندًا ببند' },
@@ -245,7 +246,7 @@ const MZ_STR = {
                         ar: 'انشره من جديد بفترة أطول، أو أرسل الرابط لمزيد من الموردين.' },
   'notFound': { en: 'That request could not be found. It may have been posted on another device — requests only travel between devices once Supabase is set up.',
                 ar: 'لم يُعثر على هذا الطلب. ربما نُشر من جهاز آخر — الطلبات لا تنتقل بين الأجهزة إلا بعد تهيئة Supabase.' },
-  'notFound.back': { en: '← Back to the board', ar: 'العودة إلى المنصّة' },
+  'notFound.back': { en: '← Back to the board', ar: 'العودة إلى المنصّة →' },
   // ---- the live auction -----------------------------------------------------
   'live.lowest':   { en: 'Lowest price right now', ar: 'أقل سعر الآن' },
   'live.from':     { en: 'from {s}', ar: 'من {s}' },
@@ -270,14 +271,12 @@ const MZ_STR = {
                      ar: 'هذا مزاد — سعرك الجديد يجب أن يكون أقل من سعرك الحالي {p}.' },
 
   // ---- the finish -----------------------------------------------------------
-  'win.banner': { en: '🏆 <b>{s} won</b> at {p} landed — delivery in {d}, {t}.',
-                  ar: '🏆 <b>فاز {s}</b> بمبلغ {p} واصلة — التوريد خلال {d}، {t}.' },
-  'win.auto':   { en: 'Lowest complete price when the clock stopped. Nobody chose it.',
-                  ar: 'أقل سعر كامل عند انتهاء الوقت. لم يخترها أحد.' },
+  'win.label':  { en: 'Winner — lowest complete price when the clock stopped', ar: 'الفائز — أقل سعر كامل عند انتهاء الوقت' },
+  'win.detail': { en: 'delivery in {d} · {t}', ar: 'التوريد خلال {d} · {t}' },
   'win.none':   { en: 'The auction ended without a bid covering every line, so there is no winner. Post it again with a longer window, or send the link to more suppliers.',
                   ar: 'انتهى المزاد دون عرض يغطي كل البنود، فلا يوجد فائز. انشره من جديد بمدة أطول، أو أرسل الرابط لمزيد من الموردين.' },
-  'win.youWon': { en: 'You won this auction 🏆', ar: 'فزت بهذا المزاد 🏆' },
-  'card.winner': { en: '🏆 {s} · {p}', ar: '🏆 {s} · {p}' },
+  'win.youWon': { en: 'You won this auction', ar: 'فزت بهذا المزاد' },
+  'card.winner': { en: 'Winner: {s} · {p}', ar: 'الفائز: {s} · {p}' },
 
   // ---- landing: stats, trust, suppliers, FAQ --------------------------------
   'stat.live':    { en: 'live auctions', ar: 'مزادات مباشرة' },
@@ -285,7 +284,7 @@ const MZ_STR = {
   'stat.drop':    { en: 'biggest price drop', ar: 'أكبر نزول سعر' },
   'stat.demo':    { en: 'sample data — clears when real auctions start', ar: 'أمثلة توضيحية — تختفي عند أول مزاد حقيقي' },
   'lh.title':     { en: 'Happening now', ar: 'يحدث الآن' },
-  'lh.cta':       { en: 'Watch the auction', ar: 'شاهد المزاد' },
+  'lh.cta':       { en: 'Watch the auction →', ar: 'شاهد المزاد ←' },
   'lh.bidders':   { en: '{n} bidding', ar: '{n} يتنافسون' },
   'demo.tag':     { en: 'Example', ar: 'مثال' },
   'demo.note':    { en: 'This is a sample auction so you can see how it works. It disappears once real auctions exist.',
@@ -407,6 +406,8 @@ function mzApplyLang() {
   if (titleKey) document.title = tr(titleKey);
   const btn = document.getElementById('lang-toggle');
   if (btn) btn.textContent = mzIsAr() ? 'English' : 'عربي';
+  document.querySelectorAll('.brand-name').forEach(el => { el.textContent = mzIsAr() ? 'مناقصة' : 'Munaqasa'; });
+  document.querySelectorAll('.brand-ar').forEach(el => { el.textContent = mzIsAr() ? 'Munaqasa' : 'مناقصة'; });
 }
 
 function mzSetLang(lang) {
